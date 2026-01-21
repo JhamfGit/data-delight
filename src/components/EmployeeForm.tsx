@@ -61,15 +61,40 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="proyecto">Proyecto *</Label>
-              <Input
+              <select
                 id="proyecto"
                 value={formData.proyecto}
                 onChange={(e) => handleChange("proyecto", e.target.value)}
-                placeholder="Ej: CONSORCIO PEAJES 2526"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
+              >
+                <option value="">Seleccione un proyecto</option>
+                <option value="SUMAPAZGICA OP VIAL">SUMAPAZGICA OP VIAL</option>
+                <option value="RUTA AL SUR OP VIAL">RUTA AL SUR OP VIAL</option>
+                <option value="VINUS OP VIAL">VINUS OP VIAL</option>
+                <option value="ACCENORTE">ACCENORTE</option>
+                <option value="FRIGORINUS VIGILANCIA">FRIGORINUS VIGILANCIA</option>
+                <option value="MINEROS LA MARIA VIGILANCIA">MINEROS LA MARIA VIGILANCIA</option>
+                <option value="APP GICA (VIGILANCIA)">APP GICA (VIGILANCIA)</option>
+                <option value="D5 EL FARO 118 VIGILANCIA">D5 EL FARO 118 VIGILANCIA</option>
+                <option value="VINUS - VIGILANCIA">VINUS - VIGILANCIA</option>
+                <option value="RUTA AL SUR - VIGILANCIA">RUTA AL SUR - VIGILANCIA</option>
+                <option value="RUTAS DEL VALLE - VIGILANCIA">RUTAS DEL VALLE - VIGILANCIA</option>
+                <option value="ACCENORTE - VIGILANCIA">ACCENORTE - VIGILANCIA</option>
+                <option value="CONSORCIO PEAJES 2526 - VIGILANCIA">CONSORCIO PEAJES 2526 - VIGILANCIA</option>
+                <option value="CONSORCIO PEAJES 2526 - PLANTA">CONSORCIO PEAJES 2526 - PLANTA</option>
+                <option value="RUTA AL SUR - RECOLECTOR TEMPORADA">RUTA AL SUR - RECOLECTOR TEMPORADA</option>
+                <option value="RUTAS DEL VALLE - RECOLECTOR TEMPORADA">RUTAS DEL VALLE - RECOLECTOR TEMPORADA</option>
+                <option value="GICA - RECOLECTOR TEMPORADA">GICA - RECOLECTOR TEMPORADA</option>
+                <option value="CONSORCIO PEAJES 2526 - CANGUROS">CONSORCIO PEAJES 2526 - CANGUROS</option>
+                <option value="RUTA AL SUR PLANTA">RUTA AL SUR PLANTA</option>
+                <option value="RUTAS DEL VALLE PLANTA">RUTAS DEL VALLE PLANTA</option>
+                <option value="GICA PLANTA">GICA PLANTA</option>
+                <option value="VINUS PLANTA">VINUS PLANTA</option>
+                <option value="ADMINISTRACION">ADMINISTRACION</option>
+                <option value="TOLIS">TOLIS</option>
+              </select>
             </div>
-            <div className="space-y-2">
+                        <div className="space-y-2">
               <Label htmlFor="centroOperacion">Centro de Operación</Label>
               <Input
                 id="centroOperacion"

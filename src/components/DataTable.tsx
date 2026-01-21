@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trash2, Database } from "lucide-react";
+import { Download, Trash2, Database, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
@@ -49,6 +49,38 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     toast.success("Archivo exportado exitosamente");
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        PROYECTO: "Ejemplo: Proyecto Norte",
+        "CENTRO DE OPERACIÓN": "Ejemplo: Cali",
+        CARGO: "Ejemplo: Operario",
+        CEDULA: "12345678",
+        NOMBRE: "Ejemplo: Juan Pérez",
+        NUMERO: "3001234567",
+        STATUS: "SI",
+      },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla");
+
+    const colWidths = [
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 10 },
+    ];
+    worksheet["!cols"] = colWidths;
+
+    XLSX.writeFile(workbook, "plantilla_empleados.xlsx");
+    toast.success("Plantilla descargada exitosamente");
+  };
+
   return (
     <Card className="card-shadow border-0">
       <CardHeader className="gradient-header rounded-t-xl flex flex-row items-center justify-between">
@@ -57,6 +89,15 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
           Registros ({data.length})
         </CardTitle>
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleDownloadTemplate}
+            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Descargar Plantilla
+          </Button>
           <Button
             variant="secondary"
             size="sm"
