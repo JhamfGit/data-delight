@@ -1,40 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Employee, EmployeeFormData } from "@/types/employee";
 import EmployeeForm from "@/components/EmployeeForm";
 import ExcelUploader from "@/components/ExcelUploader";
 import DataTable from "@/components/DataTable";
 import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 const Index = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const generateId = () => Math.random().toString(36).substring(2, 11);
+  // Cargar datos desde la base de datos al iniciar
+  useEffect(() => {
+    loadEmployees();
+  }, []);
 
-  const handleAddEmployee = (data: EmployeeFormData) => {
-    const newEmployee: Employee = {
-      ...data,
-      id: generateId(),
-    };
-    setEmployees((prev) => [...prev, newEmployee]);
+  const loadEmployees = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getRegistros();
+      // Mapear datos del backend al formato del frontend
+      const mappedData: Employee[] = data.map((item: any) => ({
+        id: item.id.toString(),
+        proyecto: item.proyecto,
+        centroOperacion: item.centro_operacion,
+        cargo: item.cargo,
+        cedula: item.cedula,
+        nombre: item.nombre,
+        numero: item.numero,
+        status: item.status,
+      }));
+      setEmployees(mappedData);
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+      toast.error("Error al cargar datos de la base de datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBulkUpload = (data: EmployeeFormData[]) => {
-    const newEmployees: Employee[] = data.map((item) => ({
-      ...item,
-      id: generateId(),
-    }));
-    setEmployees((prev) => [...prev, ...newEmployees]);
+  const handleAddEmployee = async (data: EmployeeFormData) => {
+    try {
+      setLoading(true);
+      const result = await api.saveRegistro(data);
+      if (result.ok) {
+        toast.success("Empleado guardado en la base de datos");
+        await loadEmployees(); // Recargar datos
+      } else {
+        toast.error("Error al guardar el empleado");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-    toast.success("Registro eliminado");
+  const handleBulkUpload = async (data: EmployeeFormData[]) => {
+    try {
+      setLoading(true);
+      toast.info(`Guardando ${data.length} registros...`);
+      const result = await api.saveMultipleRegistros(data);
+      toast.success(`${result.saved} de ${data.length} registros guardados en la base de datos`);
+      await loadEmployees(); // Recargar datos
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al guardar los registros");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleClear = () => {
-    setEmployees([]);
-    toast.success("Todos los registros han sido eliminados");
+  const handleDelete = async (id: string) => {
+    try {
+      setLoading(true);
+      if (!isNaN(Number(id))) {
+        await api.deleteRegistro(Number(id));
+        toast.success("Registro eliminado de la base de datos");
+      }
+      await loadEmployees(); // Recargar datos
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al eliminar el registro");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClear = async () => {
+    if (!confirm("¿Está seguro de eliminar TODOS los registros de la base de datos?")) {
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.clearRegistros();
+      toast.success("Todos los registros han sido eliminados de la base de datos");
+      await loadEmployees(); // Recargar datos
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al limpiar los registros");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,6 +129,14 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <span className="text-blue-600 font-medium">Procesando...</span>
+          </div>
+        )}
+
         {/* Forms Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EmployeeForm onSubmit={handleAddEmployee} />
@@ -73,7 +150,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-6 px-4 border-t border-border">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>Sistema de Gestión de Datos • {new Date().getFullYear()}</p>
+          <p>Sistema de Gestión de Datos • {new Date().getFullYear()} • Conectado a MySQL</p>
         </div>
       </footer>
     </div>
