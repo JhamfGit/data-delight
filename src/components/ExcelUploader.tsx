@@ -84,7 +84,7 @@ const ExcelUploader = ({ onUpload }: ExcelUploaderProps) => {
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <Upload className="w-10 h-10 mb-3 text-primary group-hover:scale-110 transition-transform" />
             <p className="mb-2 text-sm text-foreground">
-              <span className="font-semibold">Click para subir</span> o arrastra y suelta
+              <span className="font-semibold">Click para subir archivo</span>
             </p>
             <p className="text-xs text-muted-foreground">Excel (.xlsx, .xls)</p>
           </div>
