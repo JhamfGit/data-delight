@@ -20,20 +20,23 @@ const Index = () => {
     try {
       setLoading(true);
       const data = await api.getRegistros();
-      // Mapear datos del backend al formato del frontend
+      
+      // Mapear datos del backend (con guiones bajos) al frontend (camelCase)
       const mappedData: Employee[] = data.map((item: any) => ({
-        id: item.id.toString(),
-        proyecto: item.proyecto,
-        centroOperacion: item.centro_operacion,
-        cargo: item.cargo,
-        cedula: item.cedula,
-        nombre: item.nombre,
-        numero: item.numero,
-        status: item.status,
+        id: item.id?.toString() || Math.random().toString(36).substring(2, 11),
+        proyecto: item.proyecto || "",
+        centroOperacion: item.centro_operacion || "",
+        cargo: item.cargo || "",
+        cedula: item.cedula || "",
+        nombre: item.nombre || "",
+        numero: item.numero || "",
+        status: item.status || "NO",
       }));
+      
       setEmployees(mappedData);
+      console.log("✅ Registros cargados:", mappedData.length);
     } catch (error) {
-      console.error("Error cargando datos:", error);
+      console.error("❌ Error cargando datos:", error);
       toast.error("Error al cargar datos de la base de datos");
     } finally {
       setLoading(false);
