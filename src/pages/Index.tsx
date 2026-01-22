@@ -74,9 +74,9 @@ const api = {
     return await response.json();
   },
 
-  async testConnection() {
+    async testConnection() {
     try {
-      const response = await fetch(`${API_URL.replace('/api', '')}/api/test-db`);
+      const response = await fetch("/api/test-db");
       return await response.json();
     } catch (error) {
       return { status: "error", message: "No se puede conectar con el servidor" };
