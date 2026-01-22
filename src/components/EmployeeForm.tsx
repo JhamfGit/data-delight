@@ -20,7 +20,7 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
     cedula: "",
     nombre: "",
     numero: "",
-    status: "SI",
+    status: "NO", // 👈 se envía, pero no se muestra
   });
 
   const handleChange = (field: keyof EmployeeFormData, value: string) => {
@@ -29,13 +29,15 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.proyecto || !formData.nombre || !formData.cedula) {
       toast.error("Por favor complete los campos requeridos");
       return;
     }
-    
+
+    // 👉 status viaja aquí aunque no esté en el UI
     onSubmit(formData);
+
     setFormData({
       proyecto: "",
       centroOperacion: "",
@@ -45,6 +47,7 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
       numero: "",
       status: "SI",
     });
+
     toast.success("Registro agregado exitosamente");
   };
 
@@ -56,9 +59,11 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
           Nuevo Registro
         </CardTitle>
       </CardHeader>
+
       <CardContent className="pt-6">
-       <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
             {/* Proyecto */}
             <div className="space-y-2">
               <Label htmlFor="proyecto">Proyecto *</Label>
@@ -97,7 +102,7 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 </SelectContent>
               </Select>
             </div>
-        
+
             {/* Centro de Operación */}
             <div className="space-y-2">
               <Label htmlFor="centroOperacion">Centro de Operación</Label>
@@ -106,10 +111,9 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 value={formData.centroOperacion}
                 onChange={(e) => handleChange("centroOperacion", e.target.value)}
                 placeholder="Ej: Medellín"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-        
+
             {/* Cargo */}
             <div className="space-y-2">
               <Label htmlFor="cargo">Cargo</Label>
@@ -118,10 +122,9 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 value={formData.cargo}
                 onChange={(e) => handleChange("cargo", e.target.value)}
                 placeholder="Ej: Consultor"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-        
+
             {/* Cédula */}
             <div className="space-y-2">
               <Label htmlFor="cedula">Cédula *</Label>
@@ -130,10 +133,9 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 value={formData.cedula}
                 onChange={(e) => handleChange("cedula", e.target.value)}
                 placeholder="Ej: 125444354"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-        
+
             {/* Nombre */}
             <div className="space-y-2">
               <Label htmlFor="nombre">Nombre *</Label>
@@ -142,10 +144,9 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 value={formData.nombre}
                 onChange={(e) => handleChange("nombre", e.target.value)}
                 placeholder="Ej: Daniel González"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-        
+
             {/* Número */}
             <div className="space-y-2">
               <Label htmlFor="numero">Número</Label>
@@ -154,28 +155,14 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 value={formData.numero}
                 onChange={(e) => handleChange("numero", e.target.value)}
                 placeholder="Ej: 573157690773"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-        
-            {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Estado</Label>
-              <Select
-                value="NO" // Siempre enviar NO
-                onValueChange={(value) => handleChange("status", "NO")}
-              >
-                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
-                  <SelectValue placeholder="Inactivo (NO)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SI">Activo (SI)</SelectItem>
-                  <SelectItem value="NO">Inactivo (NO)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* STATUS OCULTO */}
+            <input type="hidden" value={formData.status} />
+
           </div>
-        
+
           <Button
             type="submit"
             className="w-full gradient-primary border-0 text-primary-foreground hover:opacity-90 transition-opacity"
@@ -184,7 +171,6 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
             Agregar Registro
           </Button>
         </form>
-
       </CardContent>
     </Card>
   );
