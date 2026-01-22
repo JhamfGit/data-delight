@@ -3,113 +3,200 @@ import mysql from "mysql2/promise";
 import cors from "cors";
 
 const app = express();
+
+/* =========================
+   MIDDLEWARES
+========================= */
 app.use(cors());
 app.use(express.json());
 
+/* =========================
+   LOG DE VARIABLES (CLAVE)
+========================= */
+console.log("📊 DB_HOST:", process.env.DB_HOST);
+console.log("📊 DB_USER:", process.env.DB_USER);
+console.log("📊 DB_NAME:", process.env.DB_NAME);
+console.log("📊 DB_PORT:", process.env.DB_PORT || 3306);
+
+/* =========================
+   MYSQL POOL (CON TIMEOUT)
+========================= */
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
+  port: Number(process.env.DB_PORT) || 3306,
+
   waitForConnections: true,
   connectionLimit: 10,
-  connectTimeout: 5000,
+  queueLimit: 0,
+
+  connectTimeout: 5000,     // 🔥 EVITA CUELGUES
+  acquireTimeout: 5000,
 });
 
-// Health check
+/* =========================
+   HEALTH CHECK (SIN DB)
+========================= */
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date() });
+  res.json({
+    status: "ok",
+    timestamp: new Date(),
+  });
 });
 
-// Test de conexión a BD
+/* =========================
+   TEST DB
+========================= */
 app.get("/api/test-db", async (req, res) => {
   try {
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();
-    res.json({ status: "connected", message: "Database connection successful" });
+
+    res.json({
+      ok: true,
+      message: "✅ Conectado a MySQL",
+    });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error("❌ Error DB:", error.message);
+    res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
   }
 });
 
-// Obtener todos los registros
+/* =========================
+   OBTENER REGISTROS
+========================= */
 app.get("/api/registros", async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM registros ORDER BY id DESC");
+    const [rows] = await pool.query(
+      "SELECT * FROM registros ORDER BY id DESC"
+    );
+
     console.log(`✅ Registros obtenidos: ${rows.length}`);
-    res.json({ ok: true, data: rows });
+
+    res.json({
+      ok: true,
+      data: rows,
+    });
   } catch (error) {
-    console.error("❌ Error DB:", error);
-    res.status(500).json({ ok: false, error: "Error obteniendo registros" });
+    console.error("❌ Error obteniendo registros:", error.message);
+    res.status(500).json({
+      ok: false,
+      error: "Error obteniendo registros",
+    });
   }
 });
 
-// Guardar un registro
+/* =========================
+   GUARDAR REGISTRO
+========================= */
 app.post("/api/registros", async (req, res) => {
   try {
     const {
       proyecto,
-      centro_operacion,
+      centroOperacion,
       cargo,
       cedula,
       nombre,
       numero,
       status,
     } = req.body;
-    
-    console.log("📝 Guardando registro:", { proyecto, centro_operacion, cargo, cedula, nombre });
-    
+
+    if (!proyecto || !cedula || !nombre) {
+      return res.status(400).json({
+        ok: false,
+        error: "Campos obligatorios faltantes",
+      });
+    }
+
+    console.log("📝 Guardando registro:", {
+      proyecto,
+      cedula,
+      nombre,
+    });
+
     const [result] = await pool.query(
-      `INSERT INTO registros 
+      `
+      INSERT INTO registros
       (proyecto, centro_operacion, cargo, cedula, nombre, numero, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [proyecto, centro_operacion, cargo, cedula, nombre, numero, status]
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        proyecto,
+        centroOperacion || null,
+        cargo || null,
+        cedula,
+        nombre,
+        numero || null,
+        status || "SI",
+      ]
     );
-    
-    console.log(`✅ Registro guardado con ID: ${result.insertId}`);
-    
+
     res.status(201).json({
       ok: true,
-      id_registro: result.insertId,
+      id: result.insertId,
     });
   } catch (error) {
-    console.error("❌ Error DB:", error);
-    res.status(500).json({ ok: false, error: "Error guardando registro" });
+    console.error("❌ Error guardando registro:", error.message);
+    res.status(500).json({
+      ok: false,
+      error: "Error guardando registro",
+    });
   }
 });
 
-// Eliminar un registro específico
+/* =========================
+   ELIMINAR REGISTRO
+========================= */
 app.delete("/api/registros/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`🗑️ Eliminando registro ID: ${id}`);
+
     await pool.query("DELETE FROM registros WHERE id = ?", [id]);
-    console.log(`✅ Registro ${id} eliminado`);
-    res.json({ ok: true, message: "Registro eliminado" });
+
+    res.json({
+      ok: true,
+      message: "Registro eliminado",
+    });
   } catch (error) {
-    console.error("❌ Error DB:", error);
-    res.status(500).json({ ok: false, error: "Error eliminando registro" });
+    console.error("❌ Error eliminando registro:", error.message);
+    res.status(500).json({
+      ok: false,
+      error: "Error eliminando registro",
+    });
   }
 });
 
-// Eliminar todos los registros
+/* =========================
+   LIMPIAR REGISTROS
+========================= */
 app.delete("/api/registros", async (req, res) => {
   try {
-    console.log("🗑️ Limpiando todos los registros");
     await pool.query("DELETE FROM registros");
-    console.log("✅ Todos los registros eliminados");
-    res.json({ ok: true, message: "Todos los registros eliminados" });
+
+    res.json({
+      ok: true,
+      message: "Todos los registros eliminados",
+    });
   } catch (error) {
-    console.error("❌ Error DB:", error);
-    res.status(500).json({ ok: false, error: "Error limpiando registros" });
+    console.error("❌ Error limpiando registros:", error.message);
+    res.status(500).json({
+      ok: false,
+      error: "Error limpiando registros",
+    });
   }
 });
 
+/* =========================
+   START SERVER
+========================= */
 const PORT = 3001;
+
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ API escuchando en puerto ${PORT}`);
-  console.log(`📊 DB_HOST: ${process.env.DB_HOST}`);
-  console.log(`📊 DB_NAME: ${process.env.DB_NAME}`);
+  console.log(`🚀 API escuchando en http://0.0.0.0:${PORT}`);
 });
