@@ -1,19 +1,30 @@
-import { Employee } from "@/types/employee";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trash2, Database, FileSpreadsheet } from "lucide-react";
+import { Download, Trash2, Database, FileSpreadsheet, RefreshCw } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+
+interface Employee {
+  id: string;
+  proyecto: string;
+  centroOperacion: string;
+  cargo: string;
+  cedula: string;
+  nombre: string;
+  numero: string;
+  status: string;
+}
 
 interface DataTableProps {
   data: Employee[];
   onDelete: (id: string) => void;
   onClear: () => void;
+  onRefresh?: () => void;
+  loading?: boolean;
 }
 
-const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
+const DataTable = ({ data, onDelete, onClear, onRefresh, loading = false }: DataTableProps) => {
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -21,6 +32,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     }
 
     const exportData = data.map((item) => ({
+      ID: item.id,
       PROYECTO: item.proyecto,
       "CENTRO DE OPERACIÓN": item.centroOperacion,
       CARGO: item.cargo,
@@ -35,6 +47,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
 
     const colWidths = [
+      { wch: 8 },
       { wch: 30 },
       { wch: 25 },
       { wch: 15 },
@@ -87,8 +100,23 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
         <CardTitle className="flex items-center gap-2 text-primary-foreground">
           <Database className="h-5 w-5" />
           Registros ({data.length})
+          {loading && (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent ml-2"></div>
+          )}
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {onRefresh && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onRefresh}
+              disabled={loading}
+              className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Recargar
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
@@ -102,7 +130,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
             variant="secondary"
             size="sm"
             onClick={handleExport}
-            disabled={data.length === 0}
+            disabled={data.length === 0 || loading}
             className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
           >
             <Download className="h-4 w-4 mr-2" />
@@ -112,7 +140,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
             variant="secondary"
             size="sm"
             onClick={onClear}
-            disabled={data.length === 0}
+            disabled={data.length === 0 || loading}
             className="bg-destructive/80 hover:bg-destructive text-destructive-foreground border-0"
           >
             <Trash2 className="h-4 w-4 mr-2" />
@@ -124,55 +152,68 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <Database className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">Sin registros</p>
-            <p className="text-sm">Agregue datos manualmente o cargue un archivo Excel</p>
+            <p className="text-lg font-medium">
+              {loading ? "Cargando registros..." : "Sin registros"}
+            </p>
+            <p className="text-sm">
+              {loading 
+                ? "Conectando con la base de datos MySQL..." 
+                : "Agregue datos manualmente o cargue un archivo Excel"}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-semibold">Proyecto</TableHead>
-                  <TableHead className="font-semibold">Centro Op.</TableHead>
-                  <TableHead className="font-semibold">Cargo</TableHead>
-                  <TableHead className="font-semibold">Cédula</TableHead>
-                  <TableHead className="font-semibold">Nombre</TableHead>
-                  <TableHead className="font-semibold">Número</TableHead>
-                  <TableHead className="font-semibold">Estado</TableHead>
-                  <TableHead className="font-semibold w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50 border-b">
+                  <th className="px-4 py-3 text-left text-sm font-semibold">ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Proyecto</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Centro Op.</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Cargo</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Cédula</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Número</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Estado</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold w-16"></th>
+                </tr>
+              </thead>
+              <tbody>
                 {data.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-accent/30 transition-colors">
-                    <TableCell className="font-medium max-w-[200px] truncate">{item.proyecto}</TableCell>
-                    <TableCell>{item.centroOperacion}</TableCell>
-                    <TableCell>{item.cargo}</TableCell>
-                    <TableCell className="font-mono">{item.cedula}</TableCell>
-                    <TableCell>{item.nombre}</TableCell>
-                    <TableCell className="font-mono">{item.numero}</TableCell>
-                    <TableCell>
+                  <tr key={item.id} className="border-b hover:bg-accent/30 transition-colors">
+                    <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
+                      #{item.id}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium max-w-[200px] truncate" title={item.proyecto}>
+                      {item.proyecto}
+                    </td>
+                    <td className="px-4 py-3 text-sm">{item.centroOperacion}</td>
+                    <td className="px-4 py-3 text-sm">{item.cargo}</td>
+                    <td className="px-4 py-3 text-sm font-mono">{item.cedula}</td>
+                    <td className="px-4 py-3 text-sm">{item.nombre}</td>
+                    <td className="px-4 py-3 text-sm font-mono">{item.numero}</td>
+                    <td className="px-4 py-3 text-sm">
                       <Badge
                         variant={item.status === "SI" ? "default" : "secondary"}
                         className={item.status === "SI" ? "bg-success hover:bg-success/90" : ""}
                       >
                         {item.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onDelete(item.id)}
+                        disabled={loading}
                         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         )}
       </CardContent>
