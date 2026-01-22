@@ -6,15 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Trash2, Database, FileSpreadsheet, Play } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 interface DataTableProps {
   data: Employee[];
   onDelete: (id: string) => void;
   onClear: () => void;
-  onStartProcess: (data: Employee[]) => void; // 👈 NUEVO
 }
 
-const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) => {
+const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -46,6 +46,7 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
     ];
 
     XLSX.writeFile(workbook, "datos_empleados.xlsx");
+    toast.success("Archivo exportado correctamente");
   };
 
   const handleDownloadTemplate = () => {
@@ -64,15 +65,34 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla");
     XLSX.writeFile(workbook, "plantilla_empleados.xlsx");
+    toast.success("Plantilla descargada");
   };
 
-  const handleStartProcess = () => {
+  /* ===============================
+     🔥 BOTÓN AZUL = GUARDA EN BD
+     =============================== */
+  const handleStartProcess = async () => {
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
       return;
     }
 
-    onStartProcess(data); // 👈 ENVÍA TODO
+    try {
+      toast.info(`Guardando ${data.length} registros...`);
+
+      // Quitamos el id (solo es visual)
+      const payload = data.map(({ id, ...rest }) => rest);
+
+      const result = await api.saveMultipleRegistros(payload);
+
+      toast.success(
+        `${result.saved ?? payload.length} registros guardados correctamente`
+      );
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al guardar los datos en la base de datos");
+    }
   };
 
   return (
