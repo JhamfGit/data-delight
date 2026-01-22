@@ -11,9 +11,10 @@ interface DataTableProps {
   data: Employee[];
   onDelete: (id: string) => void;
   onClear: () => void;
+  onStartProcess: (data: Employee[]) => void; // 👈 NUEVO
 }
 
-const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
+const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) => {
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -44,100 +45,79 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
       { wch: 10 },
     ];
 
-    XLSX.writeFile(
-      workbook,
-      `datos_empleados_${new Date().toISOString().split("T")[0]}.xlsx`
-    );
-    toast.success("Archivo exportado exitosamente");
+    XLSX.writeFile(workbook, "datos_empleados.xlsx");
   };
 
   const handleDownloadTemplate = () => {
-    const templateData = [
+    const worksheet = XLSX.utils.json_to_sheet([
       {
-        PROYECTO: "Ejemplo: Proyecto Norte",
-        "CENTRO DE OPERACIÓN": "Ejemplo: Cali",
-        CARGO: "Ejemplo: Operario",
-        CEDULA: "12345678",
-        NOMBRE: "Ejemplo: Juan Pérez",
-        NUMERO: "3001234567",
-        STATUS: "SI",
+        PROYECTO: "",
+        "CENTRO DE OPERACIÓN": "",
+        CARGO: "",
+        CEDULA: "",
+        NOMBRE: "",
+        NUMERO: "",
+        STATUS: "NO",
       },
-    ];
+    ]);
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla");
-
-    worksheet["!cols"] = [
-      { wch: 30 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 30 },
-      { wch: 15 },
-      { wch: 10 },
-    ];
-
     XLSX.writeFile(workbook, "plantilla_empleados.xlsx");
-    toast.success("Plantilla descargada exitosamente");
   };
 
   const handleStartProcess = () => {
-    toast.success("Proceso iniciado correctamente");
-    // aquí luego conectas tu flujo real (API, n8n, backend, etc.)
+    if (data.length === 0) {
+      toast.error("No hay registros para procesar");
+      return;
+    }
+
+    onStartProcess(data); // 👈 ENVÍA TODO
   };
 
   return (
     <Card className="card-shadow border-0">
-      <CardHeader className="gradient-header rounded-t-xl flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-primary-foreground">
+      <CardHeader className="gradient-header rounded-t-xl flex justify-between items-center">
+        <CardTitle className="flex gap-2 text-primary-foreground">
           <Database className="h-5 w-5" />
           Registros ({data.length})
         </CardTitle>
 
         <div className="flex gap-2">
-          {/* Iniciar Proceso */}
           <Button
-            variant="secondary"
             size="sm"
             onClick={handleStartProcess}
             disabled={data.length === 0}
-            className="bg-blue-500/90 hover:bg-blue-600 text-white border-0"
+            className="bg-blue-500 hover:bg-blue-600 text-white"
           >
             <Play className="h-4 w-4 mr-2" />
             Iniciar Proceso
           </Button>
 
-          {/* Descargar plantilla */}
           <Button
-            variant="secondary"
             size="sm"
             onClick={handleDownloadTemplate}
-            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
+            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
           >
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Descargar Plantilla
           </Button>
 
-          {/* Exportar Excel */}
           <Button
-            variant="secondary"
             size="sm"
             onClick={handleExport}
             disabled={data.length === 0}
-            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
+            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
           >
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
 
-          {/* Limpiar */}
           <Button
-            variant="secondary"
             size="sm"
             onClick={onClear}
             disabled={data.length === 0}
-            className="bg-destructive/80 hover:bg-destructive text-destructive-foreground border-0"
+            className="bg-destructive text-white"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Limpiar
@@ -146,69 +126,45 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
       </CardHeader>
 
       <CardContent className="p-0">
-        {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <Database className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">Sin registros</p>
-            <p className="text-sm">
-              Agregue datos manualmente o cargue un archivo Excel
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Proyecto</TableHead>
-                  <TableHead>Centro Op.</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Cédula</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Proyecto</TableHead>
+              <TableHead>Centro</TableHead>
+              <TableHead>Cargo</TableHead>
+              <TableHead>Cédula</TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Número</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
 
-              <TableBody>
-                {data.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-accent/30">
-                    <TableCell className="font-medium max-w-[200px] truncate">
-                      {item.proyecto}
-                    </TableCell>
-                    <TableCell>{item.centroOperacion}</TableCell>
-                    <TableCell>{item.cargo}</TableCell>
-                    <TableCell className="font-mono">{item.cedula}</TableCell>
-                    <TableCell>{item.nombre}</TableCell>
-                    <TableCell className="font-mono">{item.numero}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={item.status === "SI" ? "default" : "secondary"}
-                        className={
-                          item.status === "SI"
-                            ? "bg-success hover:bg-success/90"
-                            : ""
-                        }
-                      >
-                        {item.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(item.id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+          <TableBody>
+            {data.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.proyecto}</TableCell>
+                <TableCell>{item.centroOperacion}</TableCell>
+                <TableCell>{item.cargo}</TableCell>
+                <TableCell>{item.cedula}</TableCell>
+                <TableCell>{item.nombre}</TableCell>
+                <TableCell>{item.numero}</TableCell>
+                <TableCell>
+                  <Badge>{item.status}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onDelete(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
