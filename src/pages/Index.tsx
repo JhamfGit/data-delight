@@ -16,14 +16,15 @@ const Index = () => {
     loadEmployees();
   }, []);
 
+  const generateId = () => Math.random().toString(36).substring(2, 11);
+
   const loadEmployees = async () => {
     try {
       setLoading(true);
       const data = await api.getRegistros();
-      
-      // Mapear datos del backend (con guiones bajos) al frontend (camelCase)
+
       const mappedData: Employee[] = data.map((item: any) => ({
-        id: item.id?.toString() || Math.random().toString(36).substring(2, 11),
+        id: item.id?.toString() || generateId(),
         proyecto: item.proyecto || "",
         centroOperacion: item.centro_operacion || "",
         cargo: item.cargo || "",
@@ -32,7 +33,7 @@ const Index = () => {
         numero: item.numero || "",
         status: item.status || "NO",
       }));
-      
+
       setEmployees(mappedData);
       console.log("✅ Registros cargados:", mappedData.length);
     } catch (error) {
@@ -44,17 +45,25 @@ const Index = () => {
   };
 
   const handleAddEmployee = async (data: EmployeeFormData) => {
+    const newEmployee: Employee = {
+      ...data,
+      id: generateId(), // ID temporal para mostrar de inmediato
+    };
+
+    // Mostrar inmediatamente en DataTable
+    setEmployees((prev) => [...prev, newEmployee]);
+
+    // Guardar en la base de datos
     try {
       setLoading(true);
       const result = await api.saveRegistro(data);
       if (result.ok) {
         toast.success("Empleado guardado en la base de datos");
-        await loadEmployees(); // Recargar datos
       } else {
         toast.error("Error al guardar el empleado");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error(error);
       toast.error("Error al conectar con el servidor");
     } finally {
       setLoading(false);
@@ -62,48 +71,61 @@ const Index = () => {
   };
 
   const handleBulkUpload = async (data: EmployeeFormData[]) => {
+    const newEmployees: Employee[] = data.map((item) => ({
+      ...item,
+      id: generateId(), // ID temporal
+    }));
+
+    // Mostrar inmediatamente en DataTable
+    setEmployees((prev) => [...prev, ...newEmployees]);
+
+    // Guardar en la base de datos
     try {
       setLoading(true);
       toast.info(`Guardando ${data.length} registros...`);
       const result = await api.saveMultipleRegistros(data);
       toast.success(`${result.saved} de ${data.length} registros guardados en la base de datos`);
-      await loadEmployees(); // Recargar datos
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al guardar los registros");
+      console.error(error);
+      toast.error("Error al guardar los registros en la base de datos");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    // Borrar inmediatamente de DataTable
+    setEmployees((prev) => prev.filter((e) => e.id !== id));
+
+    // Borrar en la base de datos
     try {
       setLoading(true);
       if (!isNaN(Number(id))) {
         await api.deleteRegistro(Number(id));
         toast.success("Registro eliminado de la base de datos");
       }
-      await loadEmployees(); // Recargar datos
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al eliminar el registro");
+      console.error(error);
+      toast.error("Error al eliminar el registro de la base de datos");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClear = async () => {
-    if (!confirm("¿Está seguro de eliminar TODOS los registros de la base de datos?")) {
-      return;
-    }
+    if (!confirm("¿Está seguro de eliminar TODOS los registros?")) return;
+
+    // Limpiar inmediatamente DataTable
+    setEmployees([]);
+
+    // Limpiar en la base de datos
     try {
       setLoading(true);
       await api.clearRegistros();
       toast.success("Todos los registros han sido eliminados de la base de datos");
-      await loadEmployees(); // Recargar datos
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al limpiar los registros");
+      console.error(error);
+      toast.error("Error al limpiar los registros en la base de datos");
     } finally {
       setLoading(false);
     }
