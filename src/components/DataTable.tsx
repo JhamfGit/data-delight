@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trash2, Database, FileSpreadsheet } from "lucide-react";
+import { Download, Trash2, Database, FileSpreadsheet, Play } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
@@ -34,7 +34,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
 
-    const colWidths = [
+    worksheet["!cols"] = [
       { wch: 30 },
       { wch: 25 },
       { wch: 15 },
@@ -43,9 +43,11 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
       { wch: 15 },
       { wch: 10 },
     ];
-    worksheet["!cols"] = colWidths;
 
-    XLSX.writeFile(workbook, `datos_empleados_${new Date().toISOString().split("T")[0]}.xlsx`);
+    XLSX.writeFile(
+      workbook,
+      `datos_empleados_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
     toast.success("Archivo exportado exitosamente");
   };
 
@@ -66,7 +68,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla");
 
-    const colWidths = [
+    worksheet["!cols"] = [
       { wch: 30 },
       { wch: 25 },
       { wch: 15 },
@@ -75,10 +77,14 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
       { wch: 15 },
       { wch: 10 },
     ];
-    worksheet["!cols"] = colWidths;
 
     XLSX.writeFile(workbook, "plantilla_empleados.xlsx");
     toast.success("Plantilla descargada exitosamente");
+  };
+
+  const handleStartProcess = () => {
+    toast.success("Proceso iniciado correctamente");
+    // aquí luego conectas tu flujo real (API, n8n, backend, etc.)
   };
 
   return (
@@ -88,7 +94,21 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
           <Database className="h-5 w-5" />
           Registros ({data.length})
         </CardTitle>
+
         <div className="flex gap-2">
+          {/* Iniciar Proceso */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleStartProcess}
+            disabled={data.length === 0}
+            className="bg-blue-500/90 hover:bg-blue-600 text-white border-0"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Iniciar Proceso
+          </Button>
+
+          {/* Descargar plantilla */}
           <Button
             variant="secondary"
             size="sm"
@@ -98,6 +118,8 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Descargar Plantilla
           </Button>
+
+          {/* Exportar Excel */}
           <Button
             variant="secondary"
             size="sm"
@@ -108,6 +130,8 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
+
+          {/* Limpiar */}
           <Button
             variant="secondary"
             size="sm"
@@ -120,32 +144,38 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
           </Button>
         </div>
       </CardHeader>
+
       <CardContent className="p-0">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <Database className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-lg font-medium">Sin registros</p>
-            <p className="text-sm">Agregue datos manualmente o cargue un archivo Excel</p>
+            <p className="text-sm">
+              Agregue datos manualmente o cargue un archivo Excel
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-semibold">Proyecto</TableHead>
-                  <TableHead className="font-semibold">Centro Op.</TableHead>
-                  <TableHead className="font-semibold">Cargo</TableHead>
-                  <TableHead className="font-semibold">Cédula</TableHead>
-                  <TableHead className="font-semibold">Nombre</TableHead>
-                  <TableHead className="font-semibold">Número</TableHead>
-                  <TableHead className="font-semibold">Estado</TableHead>
-                  <TableHead className="font-semibold w-16"></TableHead>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Centro Op.</TableHead>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead>Cédula</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {data.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-accent/30 transition-colors">
-                    <TableCell className="font-medium max-w-[200px] truncate">{item.proyecto}</TableCell>
+                  <TableRow key={item.id} className="hover:bg-accent/30">
+                    <TableCell className="font-medium max-w-[200px] truncate">
+                      {item.proyecto}
+                    </TableCell>
                     <TableCell>{item.centroOperacion}</TableCell>
                     <TableCell>{item.cargo}</TableCell>
                     <TableCell className="font-mono">{item.cedula}</TableCell>
@@ -154,7 +184,11 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
                     <TableCell>
                       <Badge
                         variant={item.status === "SI" ? "default" : "secondary"}
-                        className={item.status === "SI" ? "bg-success hover:bg-success/90" : ""}
+                        className={
+                          item.status === "SI"
+                            ? "bg-success hover:bg-success/90"
+                            : ""
+                        }
                       >
                         {item.status}
                       </Badge>
