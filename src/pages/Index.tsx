@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Configuración de la API desde variable de entorno
-const API_URL = `${import.meta.env.VITE_API_URL}/api`;
+const API_URL = "/api";
 
 // Funciones de API
 const api = {
