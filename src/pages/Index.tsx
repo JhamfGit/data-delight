@@ -14,7 +14,8 @@ const Index = () => {
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
   /* =========================
-     CARGA INICIAL (BD)
+     CARGA INICIAL DESDE BD
+     (solo lectura)
   ==========================*/
   useEffect(() => {
     loadEmployees();
@@ -47,59 +48,35 @@ const Index = () => {
 
   /* =========================
      FORMULARIO INDIVIDUAL
+     (SOLO UI)
   ==========================*/
-  const handleAddEmployee = async (data: EmployeeFormData) => {
+  const handleAddEmployee = (data: EmployeeFormData) => {
     const tempEmployee: Employee = {
       ...data,
       id: generateId(),
     };
 
-    // Mostrar inmediatamente
     setEmployees((prev) => [...prev, tempEmployee]);
-
-    try {
-      setLoading(true);
-      const result = await api.saveRegistro(data);
-      if (result.ok) {
-        toast.success("Registro guardado");
-      } else {
-        toast.error("Error al guardar en BD");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error de conexión con el servidor");
-    } finally {
-      setLoading(false);
-    }
+    toast.success("Registro agregado a la tabla");
   };
 
   /* =========================
-     CARGA MASIVA (EXCEL)
+     CARGA MASIVA EXCEL
+     (SOLO UI)
   ==========================*/
-  const handleBulkUpload = async (data: EmployeeFormData[]) => {
+  const handleBulkUpload = (data: EmployeeFormData[]) => {
     const tempEmployees: Employee[] = data.map((item) => ({
       ...item,
       id: generateId(),
     }));
 
-    // Mostrar inmediatamente
     setEmployees((prev) => [...prev, ...tempEmployees]);
-
-    try {
-      setLoading(true);
-      toast.info(`Guardando ${data.length} registros...`);
-      const result = await api.saveMultipleRegistros(data);
-      toast.success(`${result.saved} registros guardados en la base de datos`);
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al guardar los registros");
-    } finally {
-      setLoading(false);
-    }
+    toast.success(`${data.length} registros cargados en la tabla`);
   };
 
   /* =========================
      INICIAR PROCESO (BOTÓN AZUL)
+     ÚNICO GUARDADO EN BD
   ==========================*/
   const handleStartProcess = async (data: Employee[]) => {
     if (data.length === 0) {
@@ -109,13 +86,14 @@ const Index = () => {
 
     try {
       setLoading(true);
-      toast.info(`Enviando ${data.length} registros...`);
+      toast.info(`Enviando ${data.length} registros a la base de datos...`);
 
-      // Quitamos el id temporal antes de enviar
       const payload: EmployeeFormData[] = data.map(({ id, ...rest }) => rest);
 
       const result = await api.saveMultipleRegistros(payload);
-      toast.success(`${result.saved} registros procesados correctamente`);
+
+      toast.success(`${result.saved} registros guardados correctamente`);
+      await loadEmployees(); // refrescar desde BD
     } catch (error) {
       console.error(error);
       toast.error("Error al iniciar el proceso");
@@ -134,7 +112,7 @@ const Index = () => {
       setLoading(true);
       if (!isNaN(Number(id))) {
         await api.deleteRegistro(Number(id));
-        toast.success("Registro eliminado");
+        toast.success("Registro eliminado de la base de datos");
       }
     } catch (error) {
       console.error(error);
@@ -155,7 +133,7 @@ const Index = () => {
     try {
       setLoading(true);
       await api.clearRegistros();
-      toast.success("Registros eliminados");
+      toast.success("Todos los registros fueron eliminados");
     } catch (error) {
       console.error(error);
       toast.error("Error al limpiar los registros");
@@ -180,7 +158,7 @@ const Index = () => {
               Gestión de Datos
             </h1>
             <p className="text-primary-foreground/80">
-              Ingrese datos manualmente o cargue desde Excel
+              Cargue datos y ejecute el proceso cuando esté listo
             </p>
           </div>
         </div>
