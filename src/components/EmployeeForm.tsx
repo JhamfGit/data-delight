@@ -95,6 +95,7 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                   <SelectItem value="CONSORCIO PEAJES 2526 - CANGUROS">CONSORCIO PEAJES 2526 - CANGUROS</SelectItem>
                   <SelectItem value="RUTA AL SUR PLANTA">RUTA AL SUR PLANTA</SelectItem>
                   <SelectItem value="RUTAS DEL VALLE PLANTA">RUTAS DEL VALLE PLANTA</SelectItem>
+                  <SelectItem value="RUTAS DEL VALLE - OP VIAL">RUTAS DEL VALLE - OP VIAL</SelectItem>
                   <SelectItem value="GICA PLANTA">GICA PLANTA</SelectItem>
                   <SelectItem value="VINUS PLANTA">VINUS PLANTA</SelectItem>
                   <SelectItem value="ADMINISTRACION">ADMINISTRACION</SelectItem>
