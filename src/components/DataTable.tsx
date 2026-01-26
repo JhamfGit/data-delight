@@ -15,7 +15,7 @@ interface DataTableProps {
 }
 
 const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) => {
-  
+
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -59,7 +59,7 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
         CEDULA: "",
         NOMBRE: "",
         NUMERO: "",
-        STATUS: "NO",
+        STATUS: "NO", // 🔒 plantilla forzada
       },
     ]);
 
@@ -69,13 +69,20 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
     toast.success("Plantilla descargada");
   };
 
+  // 🔥 AQUÍ ESTÁ LA PROTECCIÓN REAL
   const handleProcess = async () => {
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
       return;
     }
 
-    await onStartProcess(data);
+    // 🔒 Forzar status = "NO" antes de enviar
+    const normalizedData: Employee[] = data.map((item) => ({
+      ...item,
+      status: "NO",
+    }));
+
+    await onStartProcess(normalizedData);
   };
 
   return (
