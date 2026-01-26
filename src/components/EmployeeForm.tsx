@@ -23,6 +23,24 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
     status: "NO", // 👈 se envía, pero no se muestra
   });
 
+  const validarIndicativo = (numero) => {
+  // Indicativos comunes (puedes agregar más según necesites)
+  const indicativosValidos = [
+    /^1\d{10}$/,      // USA/Canadá: 1 + 10 dígitos
+    /^52\d{10}$/,     // México: 52 + 10 dígitos
+    /^57\d{10}$/,     // Colombia: 57 + 10 dígitos
+    /^54\d{10}$/,     // Argentina: 54 + 10 dígitos
+    /^51\d{9}$/,      // Perú: 51 + 9 dígitos
+    /^56\d{9}$/,      // Chile: 56 + 9 dígitos
+    /^34\d{9}$/,      // España: 34 + 9 dígitos
+    /^593\d{9}$/,     // Ecuador: 593 + 9 dígitos
+    /^58\d{10}$/,     // Venezuela: 58 + 10 dígitos
+    /^507\d{8}$/,     // Panamá: 507 + 8 dígitos
+  ];
+  
+  return indicativosValidos.some(regex => regex.test(numero));
+};
+
   const handleChange = (field: keyof EmployeeFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -154,7 +172,19 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
               <Input
                 id="numero"
                 value={formData.numero}
-                onChange={(e) => handleChange("numero", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Solo permite números
+                  if (value === '' || /^\d*$/.test(value)) {
+                    handleChange("numero", value);
+                  }
+                }}
+                onBlur={(e) => {
+                  const numero = e.target.value;
+                  if (numero && !validarIndicativo(numero)) {
+                    alert('El número debe incluir un indicativo de país válido (ej: 57 para Colombia, 1 para USA, 52 para México)');
+                  }
+                }}
                 placeholder="Ej: 573157690773"
               />
             </div>
