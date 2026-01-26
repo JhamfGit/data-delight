@@ -10,7 +10,6 @@ import { api } from "@/lib/api";
 const STORAGE_KEY = "employee_data_cache";
 
 const Index = () => {
-  // Inicializar con localStorage
   const [employees, setEmployees] = useState<Employee[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -41,10 +40,8 @@ const Index = () => {
 
   /* =========================
      CARGA INICIAL DESDE BD
-     (solo lectura)
   ==========================*/
   useEffect(() => {
-    // Solo cargar desde BD si NO hay datos en localStorage
     const hasLocalData = localStorage.getItem(STORAGE_KEY);
     if (!hasLocalData) {
       loadEmployees();
@@ -78,7 +75,6 @@ const Index = () => {
 
   /* =========================
      FORMULARIO INDIVIDUAL
-     (SOLO UI)
   ==========================*/
   const handleAddEmployee = (data: EmployeeFormData) => {
     const tempEmployee: Employee = {
@@ -92,7 +88,6 @@ const Index = () => {
 
   /* =========================
      CARGA MASIVA EXCEL
-     (SOLO UI)
   ==========================*/
   const handleBulkUpload = (data: EmployeeFormData[]) => {
     const tempEmployees: Employee[] = data.map((item) => ({
@@ -105,8 +100,7 @@ const Index = () => {
   };
 
   /* =========================
-     INICIAR PROCESO (BOTÓN AZUL)
-     ÚNICO GUARDADO EN BD
+     INICIAR PROCESO - AQUÍ ESTABA EL ERROR
   ==========================*/
   const handleStartProcess = async (data: Employee[]) => {
     if (data.length === 0) {
@@ -118,16 +112,18 @@ const Index = () => {
       setLoading(true);
       toast.info(`Enviando ${data.length} registros a la base de datos...`);
 
+      // Remover el 'id' temporal antes de enviar
       const payload: EmployeeFormData[] = data.map(({ id, ...rest }) => rest);
 
       const result = await api.saveMultipleRegistros(payload);
 
       toast.success(`${result.saved} registros guardados correctamente`);
       
-      // Limpiar localStorage después de guardar en BD
+      // Limpiar localStorage después de guardar
       localStorage.removeItem(STORAGE_KEY);
       
-      await loadEmployees(); // refrescar desde BD
+      // Recargar desde BD para obtener los IDs reales
+      await loadEmployees();
     } catch (error) {
       console.error(error);
       toast.error("Error al iniciar el proceso");
@@ -140,19 +136,21 @@ const Index = () => {
      ELIMINAR REGISTRO
   ==========================*/
   const handleDelete = async (id: string) => {
+    // Primero eliminamos del estado local
     setEmployees((prev) => prev.filter((e) => e.id !== id));
 
-    try {
-      setLoading(true);
-      if (!isNaN(Number(id))) {
+    // Solo intentar eliminar de BD si el ID es numérico (existe en BD)
+    if (!isNaN(Number(id))) {
+      try {
         await api.deleteRegistro(Number(id));
         toast.success("Registro eliminado de la base de datos");
+      } catch (error) {
+        console.error(error);
+        toast.error("Error al eliminar el registro de la base de datos");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al eliminar el registro");
-    } finally {
-      setLoading(false);
+    } else {
+      // Si es un ID temporal (solo en localStorage)
+      toast.success("Registro eliminado");
     }
   };
 
@@ -163,7 +161,7 @@ const Index = () => {
     if (!confirm("¿Está seguro de eliminar TODOS los registros?")) return;
 
     setEmployees([]);
-    localStorage.removeItem(STORAGE_KEY); // Limpiar localStorage también
+    localStorage.removeItem(STORAGE_KEY);
 
     try {
       setLoading(true);
@@ -177,12 +175,8 @@ const Index = () => {
     }
   };
 
-  /* =========================
-     UI
-  ==========================*/
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="gradient-header py-8 px-4">
         <div className="container mx-auto flex items-center gap-3">
           <div className="p-3 bg-primary-foreground/20 rounded-xl">
