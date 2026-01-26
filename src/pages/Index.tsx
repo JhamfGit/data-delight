@@ -7,11 +7,23 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
+const STORAGE_KEY = "employee_data_cache"; // ← LÍNEA NUEVA
+
 const Index = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  // ← LÍNEA MODIFICADA: Inicializar con localStorage
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [loading, setLoading] = useState(false);
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
+
+  // ← LÍNEA NUEVA: Guardar en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+  }, [employees]);
 
   /* =========================
      CARGA INICIAL DESDE BD
