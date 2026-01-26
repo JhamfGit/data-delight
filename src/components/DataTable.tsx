@@ -6,16 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Trash2, Database, FileSpreadsheet, Play } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 interface DataTableProps {
   data: Employee[];
   onDelete: (id: string) => void;
   onClear: () => void;
-  onStartProcess: (data: Employee[]) => Promise<void>;
 }
 
-const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) => {
-  
+const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -69,13 +68,31 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
     toast.success("Plantilla descargada");
   };
 
-  const handleProcess = async () => {
+  /* ===============================
+     🔥 BOTÓN AZUL = GUARDA EN BD
+     =============================== */
+  const handleStartProcess = async () => {
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
       return;
     }
 
-    await onStartProcess(data);
+    try {
+      toast.info(`Guardando ${data.length} registros...`);
+
+      // Quitamos el id (solo es visual)
+      const payload = data.map(({ id, ...rest }) => rest);
+
+      const result = await api.saveMultipleRegistros(payload);
+
+      toast.success(
+        `${result.saved ?? payload.length} registros guardados correctamente`
+      );
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al guardar los datos en la base de datos");
+    }
   };
 
   return (
@@ -89,7 +106,7 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
         <div className="flex gap-2">
           <Button
             size="sm"
-            onClick={handleProcess}
+            onClick={handleStartProcess}
             disabled={data.length === 0}
             className="bg-blue-500 hover:bg-blue-600 text-white"
           >
@@ -144,39 +161,28 @@ const DataTable = ({ data, onDelete, onClear, onStartProcess }: DataTableProps) 
           </TableHeader>
 
           <TableBody>
-            {data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No hay registros. Agregue datos usando el formulario o cargue un archivo Excel.
+            {data.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.proyecto}</TableCell>
+                <TableCell>{item.centroOperacion}</TableCell>
+                <TableCell>{item.cargo}</TableCell>
+                <TableCell>{item.cedula}</TableCell>
+                <TableCell>{item.nombre}</TableCell>
+                <TableCell>{item.numero}</TableCell>
+                <TableCell>
+                  <Badge>{item.status}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onDelete(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
-            ) : (
-              data.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.proyecto}</TableCell>
-                  <TableCell>{item.centroOperacion}</TableCell>
-                  <TableCell>{item.cargo}</TableCell>
-                  <TableCell>{item.cedula}</TableCell>
-                  <TableCell>{item.nombre}</TableCell>
-                  <TableCell>{item.numero}</TableCell>
-                  <TableCell>
-                    <Badge variant={item.status === "SI" ? "default" : "secondary"}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onDelete(item.id)}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </CardContent>
