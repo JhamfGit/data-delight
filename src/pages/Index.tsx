@@ -221,7 +221,7 @@ const Index = () => {
       </main>
 
       <footer className="py-6 border-t border-border text-center text-sm text-muted-foreground">
-        Sistema de Gestión de Datos • {new Date().getFullYear()} • MySQL
+        Sistema de Gestión de Datos Regency• {new Date().getFullYear()} • MySQL
       </footer>
     </div>
   );
