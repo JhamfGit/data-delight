@@ -7,14 +7,28 @@ import { Download, Trash2, Database, FileSpreadsheet, Play } from "lucide-react"
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 interface DataTableProps {
   data: Employee[];
   onDelete: (id: string) => void;
   onClear: () => void;
+  onDataChange: (newData: Employee[]) => void; // Nueva prop para actualizar datos
 }
 
-const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
+const STORAGE_KEY = "employee_data_cache";
+
+const DataTable = ({ data, onDelete, onClear, onDataChange }: DataTableProps) => {
+  
+  // Guardar en localStorage cada vez que cambien los datos
+  useEffect(() => {
+    if (data.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [data]);
+
   const handleExport = () => {
     if (data.length === 0) {
       toast.error("No hay datos para exportar");
@@ -68,9 +82,6 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
     toast.success("Plantilla descargada");
   };
 
-  /* ===============================
-     🔥 BOTÓN AZUL = GUARDA EN BD
-     =============================== */
   const handleStartProcess = async () => {
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
@@ -89,10 +100,20 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
         `${result.saved ?? payload.length} registros guardados correctamente`
       );
 
+      // Limpiar localStorage después de guardar en BD
+      localStorage.removeItem(STORAGE_KEY);
+      onClear();
+
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar los datos en la base de datos");
     }
+  };
+
+  const handleClearAll = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    onClear();
+    toast.success("Datos eliminados");
   };
 
   return (
@@ -135,7 +156,7 @@ const DataTable = ({ data, onDelete, onClear }: DataTableProps) => {
 
           <Button
             size="sm"
-            onClick={onClear}
+            onClick={handleClearAll}
             disabled={data.length === 0}
             className="bg-destructive text-white"
           >
