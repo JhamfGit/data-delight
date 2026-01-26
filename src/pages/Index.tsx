@@ -190,7 +190,7 @@ const Index = () => {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">
-              Gestión de Datos
+              Gestión de Datos Regency
             </h1>
             <p className="text-primary-foreground/80">
               Cargue datos y ejecute el proceso cuando esté listo
