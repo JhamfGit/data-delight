@@ -205,8 +205,7 @@ const Index = () => {
           </div>
         </div>
       </header>
-    </div>
-
+      
       <main className="container mx-auto px-4 py-8 space-y-8">
         {loading && (
           <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
