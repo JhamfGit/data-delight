@@ -7,22 +7,36 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
-const STORAGE_KEY = "employee_data_cache"; // ← LÍNEA NUEVA
+const STORAGE_KEY = "employee_data_cache";
 
 const Index = () => {
-  // ← LÍNEA MODIFICADA: Inicializar con localStorage
+  // Inicializar con localStorage
   const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        toast.info(`${parsed.length} registros recuperados de la sesión anterior`);
+        return parsed;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error al cargar datos de localStorage:", error);
+      return [];
+    }
   });
-  
+
   const [loading, setLoading] = useState(false);
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
-  // ← LÍNEA NUEVA: Guardar en localStorage cuando cambie
+  // Guardar en localStorage cada vez que cambien los employees
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+    if (employees.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, [employees]);
 
   /* =========================
@@ -30,7 +44,11 @@ const Index = () => {
      (solo lectura)
   ==========================*/
   useEffect(() => {
-    loadEmployees();
+    // Solo cargar desde BD si NO hay datos en localStorage
+    const hasLocalData = localStorage.getItem(STORAGE_KEY);
+    if (!hasLocalData) {
+      loadEmployees();
+    }
   }, []);
 
   const loadEmployees = async () => {
@@ -105,6 +123,10 @@ const Index = () => {
       const result = await api.saveMultipleRegistros(payload);
 
       toast.success(`${result.saved} registros guardados correctamente`);
+      
+      // Limpiar localStorage después de guardar en BD
+      localStorage.removeItem(STORAGE_KEY);
+      
       await loadEmployees(); // refrescar desde BD
     } catch (error) {
       console.error(error);
@@ -141,6 +163,7 @@ const Index = () => {
     if (!confirm("¿Está seguro de eliminar TODOS los registros?")) return;
 
     setEmployees([]);
+    localStorage.removeItem(STORAGE_KEY); // Limpiar localStorage también
 
     try {
       setLoading(true);
