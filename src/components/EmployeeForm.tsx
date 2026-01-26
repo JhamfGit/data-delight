@@ -169,7 +169,7 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
             className="w-full gradient-primary border-0 text-primary-foreground hover:opacity-90 transition-opacity"
           >
             <UserPlus className="h-4 w-4 mr-2" />
-            Agregar Registro
+            Agregar Registro al Formato
           </Button>
         </form>
       </CardContent>
