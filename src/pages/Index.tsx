@@ -7,45 +7,30 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
-const STORAGE_KEY = "employee_data_cache";
+const STORAGE_KEY = "employee_data_cache"; // ← LÍNEA NUEVA
 
 const Index = () => {
+  // ← LÍNEA MODIFICADA: Inicializar con localStorage
   const [employees, setEmployees] = useState<Employee[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        toast.info(`${parsed.length} registros recuperados de la sesión anterior`);
-        return parsed;
-      }
-      return [];
-    } catch (error) {
-      console.error("Error al cargar datos de localStorage:", error);
-      return [];
-    }
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
   });
-
+  
   const [loading, setLoading] = useState(false);
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
-  // Guardar en localStorage cada vez que cambien los employees
+  // ← LÍNEA NUEVA: Guardar en localStorage cuando cambie
   useEffect(() => {
-    if (employees.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
   }, [employees]);
 
   /* =========================
      CARGA INICIAL DESDE BD
+     (solo lectura)
   ==========================*/
   useEffect(() => {
-    const hasLocalData = localStorage.getItem(STORAGE_KEY);
-    if (!hasLocalData) {
-      loadEmployees();
-    }
+    loadEmployees();
   }, []);
 
   const loadEmployees = async () => {
@@ -75,6 +60,7 @@ const Index = () => {
 
   /* =========================
      FORMULARIO INDIVIDUAL
+     (SOLO UI)
   ==========================*/
   const handleAddEmployee = (data: EmployeeFormData) => {
     const tempEmployee: Employee = {
@@ -88,6 +74,7 @@ const Index = () => {
 
   /* =========================
      CARGA MASIVA EXCEL
+     (SOLO UI)
   ==========================*/
   const handleBulkUpload = (data: EmployeeFormData[]) => {
     const tempEmployees: Employee[] = data.map((item) => ({
@@ -100,7 +87,8 @@ const Index = () => {
   };
 
   /* =========================
-     INICIAR PROCESO - AQUÍ ESTABA EL ERROR
+     INICIAR PROCESO (BOTÓN AZUL)
+     ÚNICO GUARDADO EN BD
   ==========================*/
   const handleStartProcess = async (data: Employee[]) => {
     if (data.length === 0) {
@@ -112,18 +100,12 @@ const Index = () => {
       setLoading(true);
       toast.info(`Enviando ${data.length} registros a la base de datos...`);
 
-      // Remover el 'id' temporal antes de enviar
       const payload: EmployeeFormData[] = data.map(({ id, ...rest }) => rest);
 
       const result = await api.saveMultipleRegistros(payload);
 
       toast.success(`${result.saved} registros guardados correctamente`);
-      
-      // Limpiar localStorage después de guardar
-      localStorage.removeItem(STORAGE_KEY);
-      
-      // Recargar desde BD para obtener los IDs reales
-      await loadEmployees();
+      await loadEmployees(); // refrescar desde BD
     } catch (error) {
       console.error(error);
       toast.error("Error al iniciar el proceso");
@@ -136,21 +118,19 @@ const Index = () => {
      ELIMINAR REGISTRO
   ==========================*/
   const handleDelete = async (id: string) => {
-    // Primero eliminamos del estado local
     setEmployees((prev) => prev.filter((e) => e.id !== id));
 
-    // Solo intentar eliminar de BD si el ID es numérico (existe en BD)
-    if (!isNaN(Number(id))) {
-      try {
+    try {
+      setLoading(true);
+      if (!isNaN(Number(id))) {
         await api.deleteRegistro(Number(id));
         toast.success("Registro eliminado de la base de datos");
-      } catch (error) {
-        console.error(error);
-        toast.error("Error al eliminar el registro de la base de datos");
       }
-    } else {
-      // Si es un ID temporal (solo en localStorage)
-      toast.success("Registro eliminado");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al eliminar el registro");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -161,7 +141,6 @@ const Index = () => {
     if (!confirm("¿Está seguro de eliminar TODOS los registros?")) return;
 
     setEmployees([]);
-    localStorage.removeItem(STORAGE_KEY);
 
     try {
       setLoading(true);
@@ -175,8 +154,12 @@ const Index = () => {
     }
   };
 
+  /* =========================
+     UI
+  ==========================*/
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <header className="gradient-header py-8 px-4">
         <div className="container mx-auto flex items-center gap-3">
           <div className="p-3 bg-primary-foreground/20 rounded-xl">
