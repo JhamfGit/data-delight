@@ -184,19 +184,33 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="gradient-header py-8 px-4">
-        <div className="container mx-auto flex items-center gap-3">
-          <div className="p-3 bg-primary-foreground/20 rounded-xl">
-            <FileSpreadsheet className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">
-              Gestión de Datos Regency
-            </h1>
-            <p className="text-primary-foreground/80">
-              Cargue datos y ejecute el proceso cuando esté listo
-            </p>
-          </div>
-        </div>
+      <div className="container mx-auto flex items-center gap-4">
+      {/* Logo */}
+      <img
+      src="/r.png"
+      alt="Regency Logo"
+      className="h-14 w-14 rounded-xl object-contain bg-primary-foreground/20 p-2"
+      />
+      
+      
+      {/* Icono */}
+      <div className="p-3 bg-primary-foreground/20 rounded-xl">
+      <FileSpreadsheet className="h-8 w-8 text-primary-foreground" />
+      </div>
+      
+      
+      {/* Títulos */}
+      <div>
+      <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">
+      Gestión de Datos Regency
+      </h1>
+      <p className="text-primary-foreground/80">
+      Cargue datos y ejecute el proceso cuando esté listo
+      </p>
+      </div>
+      
+      
+      </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
