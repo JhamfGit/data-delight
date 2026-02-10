@@ -3,7 +3,7 @@ import { Employee, EmployeeFormData } from "@/types/employee";
 import EmployeeForm from "@/components/EmployeeForm";
 import ExcelUploader from "@/components/ExcelUploader";
 import DataTable from "@/components/DataTable";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -27,6 +27,23 @@ const Index = () => {
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Calcular días restantes hasta el viernes
+  const calculateDaysUntilExpiry = () => {
+    const today = new Date();
+    const expiryDate = new Date("2026-02-14"); // Viernes 14 de febrero
+    
+    // Resetear las horas para comparar solo fechas
+    today.setHours(0, 0, 0, 0);
+    expiryDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  };
+
+  const daysRemaining = calculateDaysUntilExpiry();
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -205,6 +222,30 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Mensaje de Vencimiento de Licencia */}
+      {daysRemaining > 0 && daysRemaining <= 5 && (
+        <div className="bg-red-600 text-white py-3 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="font-semibold">
+              Su licencia expira en {daysRemaining} {daysRemaining === 1 ? 'día' : 'días'}. 
+              Por favor, comuníquese con nuestro equipo técnico.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {daysRemaining <= 0 && (
+        <div className="bg-red-700 text-white py-3 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="font-semibold">
+              Su licencia ha expirado. Por favor, comuníquese con nuestro equipo técnico.
+            </p>
+          </div>
+        </div>
+      )}
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         {loading && (
