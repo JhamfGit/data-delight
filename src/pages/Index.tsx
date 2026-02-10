@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+iimport { useState, useEffect } from "react";
 import { Employee, EmployeeFormData } from "@/types/employee";
 import EmployeeForm from "@/components/EmployeeForm";
 import ExcelUploader from "@/components/ExcelUploader";
@@ -40,6 +40,7 @@ const Index = () => {
   };
 
   const hoursRemaining = calculateHoursUntilExpiry();
+  const isLicenseActive = hoursRemaining > 0;
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -122,6 +123,12 @@ const Index = () => {
      ÚNICO GUARDADO EN BD
   ==========================*/
   const handleStartProcess = async (data: Employee[]) => {
+    // Verificar si la licencia ha expirado
+    if (!isLicenseActive) {
+      toast.error("Su licencia ha expirado. Por favor, comuníquese con nuestro equipo técnico para renovarla.");
+      return;
+    }
+
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
       return;
