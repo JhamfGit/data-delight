@@ -28,22 +28,18 @@ const Index = () => {
 
   const [loading, setLoading] = useState(false);
 
-  // Calcular días restantes hasta el viernes
-  const calculateDaysUntilExpiry = () => {
-    const today = new Date();
-    const expiryDate = new Date("2026-02-14"); // Viernes 14 de febrero
+  // Calcular horas restantes hasta el viernes
+  const calculateHoursUntilExpiry = () => {
+    const now = new Date();
+    const expiryDate = new Date("2026-02-14T23:59:59"); // Viernes 14 de febrero a las 23:59:59
     
-    // Resetear las horas para comparar solo fechas
-    today.setHours(0, 0, 0, 0);
-    expiryDate.setHours(0, 0, 0, 0);
+    const diffTime = expiryDate.getTime() - now.getTime();
+    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
     
-    const diffTime = expiryDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
+    return diffHours;
   };
 
-  const daysRemaining = calculateDaysUntilExpiry();
+  const hoursRemaining = calculateHoursUntilExpiry();
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -224,19 +220,18 @@ const Index = () => {
       </header>
 
       {/* Mensaje de Vencimiento de Licencia */}
-      {daysRemaining > 0 && daysRemaining <= 5 && (
+      {hoursRemaining > 0 && (
         <div className="bg-red-600 text-white py-3 px-4">
           <div className="container mx-auto flex items-center justify-center gap-2">
             <AlertTriangle className="h-5 w-5" />
             <p className="font-semibold">
-              Su licencia expira en {daysRemaining} {daysRemaining === 1 ? 'día' : 'días'}. 
-              Por favor, comuníquese con nuestro equipo técnico.
+              ¡Atención! Tu acceso vence en {hoursRemaining} horas. Comunícate con nosotros para evitar interrupciones.
             </p>
           </div>
         </div>
       )}
 
-      {daysRemaining <= 0 && (
+      {hoursRemaining <= 0 && (
         <div className="bg-red-700 text-white py-3 px-4">
           <div className="container mx-auto flex items-center justify-center gap-2">
             <AlertTriangle className="h-5 w-5" />
