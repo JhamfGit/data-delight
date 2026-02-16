@@ -28,20 +28,6 @@ const Index = () => {
 
   const [loading, setLoading] = useState(false);
 
-  // Calcular horas restantes hasta el viernes
-  const calculateHoursUntilExpiry = () => {
-    const now = new Date();
-    const expiryDate = new Date("2026-02-14T23:59:59"); // Viernes 14 de febrero a las 23:59:59
-    
-    const diffTime = expiryDate.getTime() - now.getTime();
-    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-    
-    return diffHours;
-  };
-
-  const hoursRemaining = calculateHoursUntilExpiry();
-  const isLicenseActive = hoursRemaining > 0;
-
   const generateId = () => Math.random().toString(36).substring(2, 11);
 
   // Guardar en localStorage cada vez que cambien los employees
@@ -123,12 +109,6 @@ const Index = () => {
      ÚNICO GUARDADO EN BD
   ==========================*/
   const handleStartProcess = async (data: Employee[]) => {
-    // Verificar si la licencia ha expirado
-    if (!isLicenseActive) {
-      toast.error("Su licencia ha expirado. Por favor, comuníquese con nuestro equipo técnico para renovarla.");
-      return;
-    }
-
     if (data.length === 0) {
       toast.error("No hay registros para procesar");
       return;
@@ -225,29 +205,6 @@ const Index = () => {
           </div>
         </div>
       </header>
-
-      {/* Mensaje de Vencimiento de Licencia */}
-      {hoursRemaining > 0 && (
-        <div className="bg-red-600 text-white py-3 px-4">
-          <div className="container mx-auto flex items-center justify-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            <p className="font-semibold">
-              ¡Atención! Tu acceso vence en {hoursRemaining} horas. Comunícate con nosotros para evitar interrupciones.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {hoursRemaining <= 0 && (
-        <div className="bg-red-700 text-white py-3 px-4">
-          <div className="container mx-auto flex items-center justify-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            <p className="font-semibold">
-              Su licencia ha expirado. Por favor, comuníquese con nuestro equipo técnico.
-            </p>
-          </div>
-        </div>
-      )}
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         {loading && (
