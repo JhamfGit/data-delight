@@ -123,10 +123,10 @@ const Index = () => {
       const result = await api.saveMultipleRegistros(payload);
 
       toast.success(`${result.saved} registros guardados correctamente`);
-      
+
       // Limpiar localStorage después de guardar en BD
       localStorage.removeItem(STORAGE_KEY);
-      
+
       await loadEmployees(); // refrescar desde BD
     } catch (error) {
       console.error(error);
@@ -193,9 +193,9 @@ const Index = () => {
               className="h-8 w-8 object-contain"
             />
           </div>
-    
+
           {/* Textos */}
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">
               Gestión de Datos Regency
             </h1>
@@ -203,9 +203,37 @@ const Index = () => {
               Cargue datos y ejecute el proceso cuando esté listo
             </p>
           </div>
+
+          {/* Botón Cerrar Sesión */}
+          <button
+            onClick={() => {
+              localStorage.removeItem("isLoggedIn");
+              localStorage.removeItem("username");
+              window.location.href = "/";
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-log-out"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" x2="9" y1="12" y2="12" />
+            </svg>
+            <span className="hidden md:inline">Cerrar Sesión</span>
+          </button>
         </div>
       </header>
-      
+
       <main className="container mx-auto px-4 py-8 space-y-8">
         {loading && (
           <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
