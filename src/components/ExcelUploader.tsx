@@ -42,13 +42,22 @@ const ExcelUploader = ({ onUpload }: ExcelUploaderProps) => {
                 return index >= 0 ? String(row[index] || "") : "";
               };
 
+              const formatNumeroExcel = (val: string) => {
+                const numLimpio = String(val || "").replace(/\D/g, "");
+                if (!numLimpio) return "";
+                if (numLimpio.startsWith("57") && numLimpio.length >= 12) {
+                  return numLimpio;
+                }
+                return `57${numLimpio}`;
+              };
+
               return {
                 proyecto: findColumn(["proyecto"]),
                 centroOperacion: findColumn(["centro", "operacion", "operación"]),
                 cargo: findColumn(["cargo"]),
                 cedula: findColumn(["cedula", "cédula"]),
                 nombre: findColumn(["nombre"]),
-                numero: findColumn(["numero", "número", "telefono", "teléfono"]),
+                numero: formatNumeroExcel(findColumn(["numero", "número", "telefono", "teléfono"])),
                 status: findColumn(["status", "estado"]) || "SI",
               };
             });

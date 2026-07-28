@@ -23,22 +23,13 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
     status: "NO", // 👈 se envía, pero no se muestra
   });
 
-  const validarIndicativo = (numero) => {
-    // Indicativos comunes (puedes agregar más según necesites)
-    const indicativosValidos = [
-      /^1\d{10}$/,      // USA/Canadá: 1 + 10 dígitos
-      /^52\d{10}$/,     // México: 52 + 10 dígitos
-      /^57\d{10}$/,     // Colombia: 57 + 10 dígitos
-      /^54\d{10}$/,     // Argentina: 54 + 10 dígitos
-      /^51\d{9}$/,      // Perú: 51 + 9 dígitos
-      /^56\d{9}$/,      // Chile: 56 + 9 dígitos
-      /^34\d{9}$/,      // España: 34 + 9 dígitos
-      /^593\d{9}$/,     // Ecuador: 593 + 9 dígitos
-      /^58\d{10}$/,     // Venezuela: 58 + 10 dígitos
-      /^507\d{8}$/,     // Panamá: 507 + 8 dígitos
-    ];
-
-    return indicativosValidos.some(regex => regex.test(numero));
+  const formatNumeroConIndicativo = (val: string) => {
+    const numLimpio = val.replace(/\D/g, "");
+    if (!numLimpio) return "";
+    if (numLimpio.startsWith("57") && numLimpio.length >= 12) {
+      return numLimpio;
+    }
+    return `57${numLimpio}`;
   };
 
   const handleChange = (field: keyof EmployeeFormData, value: string) => {
@@ -53,8 +44,13 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
       return;
     }
 
+    const numeroFinal = formatNumeroConIndicativo(formData.numero);
+
     // 👉 status viaja aquí aunque no esté en el UI
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      numero: numeroFinal,
+    });
 
     setFormData({
       proyecto: "",
@@ -156,24 +152,24 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
             {/* Número */}
             <div className="space-y-2">
               <Label htmlFor="numero">Número</Label>
-              <Input
-                id="numero"
-                value={formData.numero}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Solo permite números
-                  if (value === '' || /^\d*$/.test(value)) {
-                    handleChange("numero", value);
-                  }
-                }}
-                onBlur={(e) => {
-                  const numero = e.target.value;
-                  if (numero && !validarIndicativo(numero)) {
-                    alert('El número debe incluir un indicativo de país válido (ej: 57 para Colombia, 1 para USA, 52 para México)');
-                  }
-                }}
-                placeholder="Ej: 573157690773"
-              />
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium select-none">
+                  +57
+                </span>
+                <Input
+                  id="numero"
+                  className="rounded-l-none"
+                  value={formData.numero}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Solo permite números
+                    if (value === '' || /^\d*$/.test(value)) {
+                      handleChange("numero", value);
+                    }
+                  }}
+                  placeholder="Ej: 3157690773"
+                />
+              </div>
             </div>
 
             {/* STATUS OCULTO */}
