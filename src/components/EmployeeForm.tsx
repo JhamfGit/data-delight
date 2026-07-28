@@ -89,18 +89,18 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                   <SelectValue placeholder="Seleccione un proyecto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACCENORTE">ACCENORTE</SelectItem>
-                  <SelectItem value="RUTAS DEL VALLE">RUTAS DEL VALLE</SelectItem>
-                  <SelectItem value="VINUS">VINUS</SelectItem>
                   <SelectItem value="GICA">GICA</SelectItem>
                   <SelectItem value="V40">V40</SelectItem>
-                  <SelectItem value="CPC256">CPC256</SelectItem>
+                  <SelectItem value="CPC2526">CPC2526</SelectItem>
                   <SelectItem value="RUTA AL SUR">RUTA AL SUR</SelectItem>
-                  <SelectItem value="CPC256 CONT">CPC256 CONT</SelectItem>
-                  <SelectItem value="RUTA AL SUR CONT">RUTA AL SUR CONT</SelectItem>
-                  <SelectItem value="RUTAS DEL VALLE CONT">RUTAS DEL VALLE CONT</SelectItem>
-                  <SelectItem value="VINUS CONT">VINUS CONT</SelectItem>
-                  <SelectItem value="GICA CONT">GICA CONT</SelectItem>
+                  <SelectItem value="ACCENORTE">ACCENORTE</SelectItem>
+                  <SelectItem value="VINUS">VINUS</SelectItem>
+                  <SelectItem value="ADMINISTRACIÓN">ADMINISTRACIÓN</SelectItem>
+                  <SelectItem value="ESTANQUILLO">ESTANQUILLO</SelectItem>
+                  <SelectItem value="GICA Contingencia">GICA Contingencia</SelectItem>
+                  <SelectItem value="CPC2526 Contingencia">CPC2526 Contingencia</SelectItem>
+                  <SelectItem value="RUTA AL SUR Contingencia">RUTA AL SUR Contingencia</SelectItem>
+                  <SelectItem value="VINUS Contingencia">VINUS Contingencia</SelectItem>
                 </SelectContent>
               </Select>
             </div>
