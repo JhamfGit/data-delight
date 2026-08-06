@@ -91,14 +91,14 @@ const EmployeeForm = ({ onSubmit }: EmployeeFormProps) => {
                 <SelectContent>
                   <SelectItem value="GICA">GICA</SelectItem>
                   <SelectItem value="V40">V40</SelectItem>
-                  <SelectItem value="CPC2526">CPC2526</SelectItem>
+                  <SelectItem value="CPC2526">CPC256</SelectItem>
                   <SelectItem value="RUTA AL SUR">RUTA AL SUR</SelectItem>
                   <SelectItem value="ACCENORTE">ACCENORTE</SelectItem>
                   <SelectItem value="VINUS">VINUS</SelectItem>
                   <SelectItem value="ADMINISTRACIÓN">ADMINISTRACIÓN</SelectItem>
                   <SelectItem value="ESTANQUILLO">ESTANQUILLO</SelectItem>
                   <SelectItem value="GICA Contingencia">GICA Contingencia</SelectItem>
-                  <SelectItem value="CPC2526 Contingencia">CPC2526 Contingencia</SelectItem>
+                  <SelectItem value="CPC2526 Contingencia">CPC256 Contingencia</SelectItem>
                   <SelectItem value="RUTA AL SUR Contingencia">RUTA AL SUR Contingencia</SelectItem>
                   <SelectItem value="VINUS Contingencia">VINUS Contingencia</SelectItem>
                 </SelectContent>
