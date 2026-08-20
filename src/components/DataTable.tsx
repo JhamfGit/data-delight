@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Employee, Pagination } from "@/types/employee";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Download, Trash2, Database, FileSpreadsheet, Play,
-  ChevronLeft, ChevronRight, History,
+  Download, Trash2, FileSpreadsheet, Play,
+  ChevronLeft, ChevronRight, History, FileDown, Loader2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 interface DataTableProps {
   data: Employee[];
@@ -34,14 +36,10 @@ const DataTable = ({
   onPageChange,
   showUserColumn = false,
 }: DataTableProps) => {
+  const [exportingAll, setExportingAll] = useState(false);
 
-  const handleExport = () => {
-    if (data.length === 0) {
-      toast.error("No hay datos para exportar");
-      return;
-    }
-
-    const exportData = data.map((item) => ({
+  const generateExcel = (records: Employee[], fileName: string) => {
+    const exportData = records.map((item) => ({
       PROYECTO:              item.proyecto,
       "CENTRO DE OPERACIÓN": item.centroOperacion,
       CARGO:                 item.cargo,
@@ -64,8 +62,34 @@ const DataTable = ({
       ...(showUserColumn ? [{ wch: 20 }] : []),
     ];
 
-    XLSX.writeFile(workbook, "datos_empleados.xlsx");
-    toast.success("Archivo exportado correctamente");
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const handleExportPage = () => {
+    if (data.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+    generateExcel(data, "registros_pagina.xlsx");
+    toast.success("Página exportada correctamente");
+  };
+
+  const handleExportAll = async () => {
+    try {
+      setExportingAll(true);
+      toast.info("Descargando todos los registros de la base de datos...");
+      const allRecords = await api.getAllRegistros();
+      if (allRecords.length === 0) {
+        toast.error("No se encontraron registros para exportar");
+        return;
+      }
+      generateExcel(allRecords, "todos_los_registros.xlsx");
+      toast.success(`${allRecords.length} registros exportados correctamente a Excel`);
+    } catch {
+      toast.error("Error al exportar todos los registros");
+    } finally {
+      setExportingAll(false);
+    }
   };
 
   const handleDownloadTemplate = () => {
@@ -83,14 +107,12 @@ const DataTable = ({
       toast.error("No hay registros para procesar");
       return;
     }
-    // status se fuerza a "NO" en el servidor — aquí no se toca
     await onStartProcess(data);
   };
 
   const isPending = mode === "pending";
   const isSaved   = mode === "saved";
-
-  const colSpan = showUserColumn ? 9 : 8;
+  const colSpan   = showUserColumn ? 9 : 8;
 
   return (
     <Card className="card-shadow border-0">
@@ -135,20 +157,55 @@ const DataTable = ({
               </Button>
             )}
 
-            <Button
-              size="sm"
-              onClick={handleExport}
-              disabled={data.length === 0}
-              className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Excel
-            </Button>
+            {/* Exportar Excel en modo pending */}
+            {isPending && (
+              <Button
+                size="sm"
+                onClick={handleExportPage}
+                disabled={data.length === 0}
+                className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+            )}
+
+            {/* Exportar Página en modo saved */}
+            {isSaved && (
+              <Button
+                size="sm"
+                onClick={handleExportPage}
+                disabled={data.length === 0}
+                title="Exportar los 10 registros visibles en esta página"
+                className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Página
+              </Button>
+            )}
+
+            {/* 🔥 NUEVO: Exportar TODO los registros en modo saved */}
+            {isSaved && (
+              <Button
+                size="sm"
+                onClick={handleExportAll}
+                disabled={exportingAll || (pagination?.total === 0)}
+                title="Exportar todos los registros de la base de datos"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
+              >
+                {exportingAll ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Exportar Todo
+              </Button>
+            )}
 
             <Button
               size="sm"
               onClick={onClear}
-              disabled={data.length === 0}
+              disabled={data.length === 0 && (!pagination || pagination.total === 0)}
               className="bg-destructive text-white"
             >
               <Trash2 className="h-4 w-4 mr-2" />

@@ -57,6 +57,31 @@ export const api = {
     }
   },
 
+  async getAllRegistros(): Promise<Employee[]> {
+    try {
+      const response = await fetch(`${API_URL}/api/registros?all=true`, {
+        headers: authHeaders(),
+      });
+      const json = await response.json();
+      if (!json.ok) return [];
+      return json.data.map((item: any) => ({
+        id:              String(item.id_registro || item.id),
+        proyecto:        item.proyecto         || "",
+        centroOperacion: item.centro_operacion || "",
+        cargo:           item.cargo            || "",
+        cedula:          item.cedula           || "",
+        nombre:          item.nombre           || "",
+        numero:          item.numero           || "",
+        status:          item.status           || "NO",
+        createdAt:       item.created_at,
+        usuarioNombre:   item.usuario_nombre,
+      }));
+    } catch (error) {
+      console.error("Error obteniendo todos los registros:", error);
+      return [];
+    }
+  },
+
   async saveRegistro(empleado: Omit<Employee, "id" | "createdAt" | "usuarioNombre">): Promise<{ ok: boolean; id_registro?: number }> {
     try {
       const response = await fetch(`${API_URL}/api/registros`, {

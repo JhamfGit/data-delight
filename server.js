@@ -111,9 +111,33 @@ app.get("/api/auth/me", authenticateToken, (req, res) => {
 
 // ─── REGISTROS ────────────────────────────────────────────────
 
-/** GET /api/registros?page=1&limit=10 */
+/** GET /api/registros?page=1&limit=10 o ?all=true */
 app.get("/api/registros", authenticateToken, async (req, res) => {
   try {
+    // Si solicita exportar todo (sin paginación)
+    if (req.query.all === "true") {
+      let dataQuery, params;
+      if (req.user.rol === "admin") {
+        dataQuery = `
+          SELECT r.*, u.username AS usuario_nombre
+          FROM registros r
+          LEFT JOIN usuarios u ON r.user_id = u.id
+          ORDER BY r.id_registro DESC
+        `;
+        params = [];
+      } else {
+        dataQuery = `
+          SELECT * FROM registros
+          WHERE user_id = ?
+          ORDER BY id_registro DESC
+        `;
+        params = [req.user.id];
+      }
+      const [rows] = await pool.query(dataQuery, params);
+      console.log(`✅ Registros exportación completa: ${rows.length} — usuario: ${req.user.username}`);
+      return res.json({ ok: true, data: rows });
+    }
+
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.max(1, parseInt(req.query.limit) || 10);
     const offset = (page - 1) * limit;
