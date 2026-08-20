@@ -118,45 +118,45 @@ app.get("/api/registros", authenticateToken, async (req, res) => {
     const limit = Math.max(1, parseInt(req.query.limit) || 10);
     const offset = (page - 1) * limit;
 
-    let countQuery, dataQuery, params;
+    let countQuery, dataQuery, countParams, dataParams;
 
     if (req.user.rol === "admin") {
       // Admin ve todos los registros con nombre de usuario
-      countQuery = "SELECT COUNT(*) AS total FROM registros";
-      dataQuery  = `
+      countQuery  = "SELECT COUNT(*) AS total FROM registros";
+      countParams = [];
+      dataQuery   = `
         SELECT r.*, u.username AS usuario_nombre
         FROM registros r
         LEFT JOIN usuarios u ON r.user_id = u.id
         ORDER BY r.id_registro DESC
         LIMIT ? OFFSET ?
       `;
-      params = [limit, offset];
+      dataParams  = [limit, offset];
     } else {
       // Operador ve solo sus propios registros
-      countQuery = "SELECT COUNT(*) AS total FROM registros WHERE user_id = ?";
-      dataQuery  = `
+      countQuery  = "SELECT COUNT(*) AS total FROM registros WHERE user_id = ?";
+      countParams = [req.user.id];
+      dataQuery   = `
         SELECT * FROM registros
         WHERE user_id = ?
         ORDER BY id_registro DESC
         LIMIT ? OFFSET ?
       `;
-      params = [req.user.id, limit, offset];
+      dataParams  = [req.user.id, limit, offset];
     }
 
-    const [[{ total }]] = await pool.execute(
-      countQuery,
-      req.user.rol === "admin" ? [] : [req.user.id]
-    );
+    const [countRows] = await pool.query(countQuery, countParams);
+    const total = countRows[0]?.total ? Number(countRows[0].total) : 0;
 
-    const [rows] = await pool.execute(dataQuery, params);
+    const [rows] = await pool.query(dataQuery, dataParams);
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / limit) || 1;
 
-    console.log(`✅ Registros obtenidos: ${rows.length} (página ${page}/${totalPages}) — usuario: ${req.user.username}`);
+    console.log(`✅ Registros obtenidos: ${rows.length} (total ${total}, página ${page}/${totalPages}) — usuario: ${req.user.username}`);
     res.json({ ok: true, data: rows, pagination: { total, page, limit, totalPages } });
   } catch (error) {
-    console.error("❌ Error DB:", error);
-    res.status(500).json({ ok: false, error: "Error obteniendo registros" });
+    console.error("❌ Error DB obteniendo registros:", error);
+    res.status(500).json({ ok: false, error: "Error obteniendo registros: " + error.message });
   }
 });
 
