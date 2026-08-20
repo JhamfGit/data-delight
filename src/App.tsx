@@ -5,18 +5,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Componente para proteger rutas
+// Verifica que haya un token JWT válido (existencia, no expiración)
+const isAuthenticated = () => !!localStorage.getItem("token");
+const isAdmin = () => localStorage.getItem("userRol") === "admin";
+
+/** Protege rutas que requieren login */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  if (!isAuthenticated()) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
 
-  if (!isLoggedIn) {
-    return <Navigate to="/" replace />;
-  }
-
+/** Protege rutas que requieren rol admin */
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  if (!isAuthenticated()) return <Navigate to="/" replace />;
+  if (!isAdmin()) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -34,6 +41,14 @@ const App = () => (
               <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
             }
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

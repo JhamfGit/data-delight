@@ -7,6 +7,32 @@ export interface Employee {
   nombre: string;
   numero: string;
   status: string;
+  // Campos adicionales cuando viene de BD
+  createdAt?: string;
+  usuarioNombre?: string; // solo visible para admin
 }
 
-export type EmployeeFormData = Omit<Employee, 'id'>;
+export type EmployeeFormData = Omit<Employee, 'id' | 'createdAt' | 'usuarioNombre'>;
+
+export interface User {
+  id: number;
+  username: string;
+  nombre: string;
+  rol: 'admin' | 'operador';
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  nombre: string;
+  rol: 'admin' | 'operador';
+  activo: number;
+  created_at: string;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
