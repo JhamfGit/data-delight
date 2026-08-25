@@ -7,9 +7,18 @@ import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
 import "dotenv/config";
 
-const ADMIN_USERNAME = "AdminRegency";
-const ADMIN_PASSWORD = "Regis_Regen_123Mic";
-const ADMIN_NOMBRE   = "Administrador Regency";
+if (!process.env.ADMIN_USERNAME || process.env.ADMIN_USERNAME.trim() === "") {
+  console.error("FATAL: ADMIN_USERNAME environment variable is required and has no fallback default. Refusing to seed.");
+  process.exit(1);
+}
+if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.trim() === "") {
+  console.error("FATAL: ADMIN_PASSWORD environment variable is required and has no fallback default. Refusing to seed.");
+  process.exit(1);
+}
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NOMBRE   = process.env.ADMIN_NOMBRE || "Administrador Regency";
 
 async function seed() {
   const connection = await mysql.createConnection({
