@@ -19,7 +19,16 @@ const pool = mysql.createPool({
   connectionLimit:  10,
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || "regency_jwt_secret_change_in_production";
+// Fail closed: no insecure fallback default. A previously-hardcoded
+// fallback value ("regency_jwt_secret_change_in_production") was a
+// security finding -- anyone who saw the source code could forge valid
+// tokens against any deployment that forgot to set JWT_SECRET. The
+// server now refuses to start instead of running with a known secret.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === "") {
+  console.error("FATAL: JWT_SECRET environment variable is required and has no fallback default. Refusing to start.");
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ─── Middlewares ──────────────────────────────────────────────
 
