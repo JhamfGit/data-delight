@@ -6,7 +6,7 @@ import ExcelUploader from "@/components/ExcelUploader";
 import DataTable from "@/components/DataTable";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { Users } from "lucide-react";
+import { Users, ListFilter } from "lucide-react";
 
 // Cache temporal de registros pendientes (aún no enviados a BD)
 const PENDING_KEY = "pending_employee_data";
@@ -184,6 +184,15 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Registros — visible para admin y operador, misma pantalla que AuthenticatedRoute admite */}
+            <button
+              onClick={() => navigate("/admin/registros")}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+            >
+              <ListFilter className="h-4 w-4" />
+              <span className="hidden md:inline">Registros</span>
+            </button>
+
             {/* Panel Admin — solo visible para admins */}
             {userRol === "admin" && (
               <button
