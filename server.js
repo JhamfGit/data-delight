@@ -9,6 +9,13 @@ import {
   changeRegistroStatus,
   getRegistroAuditLog,
 } from "./lib/registrosService.js";
+import { evaluateLoginAttempt } from "./lib/loginPolicy.js";
+import {
+  updateUsuario,
+  changeUsuarioEstado,
+  deleteUsuarioGuarded,
+  getUsuarioAuditLog,
+} from "./lib/usuariosService.js";
 
 const app = express();
 app.use(cors());
@@ -96,13 +103,14 @@ app.post("/api/auth/login", async (req, res) => {
 
     const user = rows[0];
 
-    if (!user.activo) {
-      return res.status(401).json({ ok: false, error: "Usuario desactivado" });
-    }
-
+    // Always run the password comparison, then evaluate activo + password
+    // together through one generic response (lib/loginPolicy.js) — a
+    // deactivated account MUST fail identically to a wrong password, with
+    // no distinguishing message or short-circuit (spec: no info leak).
     const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ ok: false, error: "Credenciales incorrectas" });
+    const attempt = evaluateLoginAttempt({ activo: !!user.activo, passwordMatches: passwordMatch });
+    if (!attempt.ok) {
+      return res.status(401).json({ ok: false, error: attempt.error });
     }
 
     const token = jwt.sign(
@@ -347,19 +355,65 @@ app.post("/api/admin/usuarios", authenticateToken, requireAdmin, async (req, res
   }
 });
 
-/** DELETE /api/admin/usuarios/:id */
+/**
+ * PATCH /api/admin/usuarios/:id — edit nombre XOR rol (design D1/API
+ * Surface). `email` is not an editable field: the live schema has no such
+ * column (see lib/usuariosService.js).
+ */
+app.patch("/api/admin/usuarios/:id", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { nombre, rol, reason } = req.body;
+    const result = await updateUsuario(pool, { actor: req.user, id: req.params.id, nombre, rol, reason });
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB actualizando usuario:", error);
+    res.status(500).json({ ok: false, error: "Error actualizando usuario" });
+  }
+});
+
+/**
+ * PATCH /api/admin/usuarios/:id/estado — deactivate/reactivate (design D5).
+ * Body: { activo, reason }. Only `admin` may reactivate; distinguishes
+ * `403 reactivate_forbidden` from generic `403 forbidden` (see
+ * lib/usuariosService.js for why both branches are needed even though the
+ * route is already `requireAdmin`-gated for other Phase 5 routes — here the
+ * check happens in the service so the specific code can be returned).
+ */
+app.patch("/api/admin/usuarios/:id/estado", authenticateToken, async (req, res) => {
+  try {
+    const { activo, reason } = req.body;
+    const result = await changeUsuarioEstado(pool, { actor: req.user, id: req.params.id, activo, reason });
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB actualizando estado de usuario:", error);
+    res.status(500).json({ ok: false, error: "Error actualizando estado de usuario" });
+  }
+});
+
+/** GET /api/admin/usuarios/:id/audit — historial de auditoría del usuario */
+app.get("/api/admin/usuarios/:id/audit", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await getUsuarioAuditLog(pool, req.params.id);
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB obteniendo auditoría de usuario:", error);
+    res.status(500).json({ ok: false, error: "Error obteniendo auditoría de usuario" });
+  }
+});
+
+/**
+ * DELETE /api/admin/usuarios/:id — self-delete guard (unchanged behavior)
+ * plus the history guard (spec "Delete-Guard for Usuarios With History"):
+ * `409 user_has_history` when referenced in `registros.user_id` or
+ * `admin_audit_log.actor_id`, otherwise unchanged.
+ */
 app.delete("/api/admin/usuarios/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-
-    // No permitir eliminar el propio usuario admin
-    if (parseInt(id) === req.user.id) {
-      return res.status(400).json({ ok: false, error: "No podés eliminar tu propio usuario" });
+    const result = await deleteUsuarioGuarded(pool, req.user, req.params.id);
+    if (result.httpStatus === 200) {
+      console.log(`✅ Usuario ${req.params.id} eliminado`);
     }
-
-    await pool.execute("DELETE FROM usuarios WHERE id = ?", [id]);
-    console.log(`✅ Usuario ${id} eliminado`);
-    res.json({ ok: true, message: "Usuario eliminado" });
+    res.status(result.httpStatus).json(result.body);
   } catch (error) {
     console.error("❌ Error DB:", error);
     res.status(500).json({ ok: false, error: "Error eliminando usuario" });
