@@ -1,4 +1,5 @@
 import { Employee, AdminUser, Pagination } from "@/types/employee";
+import { AuditLogRow, RegistroFilters, RegistroRow } from "@/types/admin";
 
 // ─── URL del API ──────────────────────────────────────────────
 const getApiUrl = () => {
@@ -80,6 +81,62 @@ export const api = {
       console.error("Error obteniendo todos los registros:", error);
       return [];
     }
+  },
+
+  // ── Admin — registros (Phase 6: /admin/registros) ─────────────
+  /**
+   * `GET /api/registros` with the full filter set (design "Frontend" /
+   * spec "Role-Scoped Registro Search, Filter, and Detail"). Kept separate
+   * from `getRegistros`/`getAllRegistros` above (which the existing
+   * `/dashboard` page still uses unmodified) because the admin filter page
+   * needs the raw row shape (`RegistroRow`), not the camelCase `Employee`
+   * mapping those two already do for their own callers.
+   */
+  async listRegistrosAdmin(
+    filters: RegistroFilters
+  ): Promise<{ ok: boolean; data: RegistroRow[]; pagination: Pagination }> {
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.proyecto) params.set("proyecto", filters.proyecto);
+    if (filters.centro_operacion) params.set("centro_operacion", filters.centro_operacion);
+    params.set("page", String(filters.page));
+    params.set("pageSize", String(filters.pageSize));
+
+    const response = await fetch(`${API_URL}/api/registros?${params.toString()}`, {
+      headers: authHeaders(),
+    });
+    return response.json();
+  },
+
+  async getRegistroDetail(
+    id: string | number
+  ): Promise<{ ok: boolean; data?: RegistroRow; error?: string }> {
+    const response = await fetch(`${API_URL}/api/registros/${id}`, {
+      headers: authHeaders(),
+    });
+    return response.json();
+  },
+
+  async changeRegistroStatus(
+    id: string | number,
+    payload: { fromStatus: string; toStatus: string; reason: string }
+  ): Promise<{ ok: boolean; status?: string; auditId?: number; error?: string }> {
+    const response = await fetch(`${API_URL}/api/registros/${id}/status`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+
+  async getRegistroAudit(
+    id: string | number
+  ): Promise<{ ok: boolean; data: AuditLogRow[] }> {
+    const response = await fetch(`${API_URL}/api/registros/${id}/audit`, {
+      headers: authHeaders(),
+    });
+    return response.json();
   },
 
   async saveRegistro(empleado: Omit<Employee, "id" | "createdAt" | "usuarioNombre">): Promise<{ ok: boolean; id_registro?: number }> {
@@ -171,6 +228,11 @@ export const api = {
     }
   },
 
+  // Delete kept in the API client because the backend guard still exists
+  // (`DELETE /api/admin/usuarios/:id`, `409 user_has_history`), but Phase 6
+  // deliberately does not expose it as a UI action (proposal's "no
+  // hard-delete exposed" intent) — no caller of this method remains after
+  // this change; left for a future explicit re-exposure decision.
   async deleteUsuario(id: number): Promise<{ ok: boolean; error?: string }> {
     try {
       const response = await fetch(`${API_URL}/api/admin/usuarios/${id}`, {
@@ -182,5 +244,37 @@ export const api = {
       console.error("Error eliminando usuario:", error);
       return { ok: false, error: "Error de conexión" };
     }
+  },
+
+  // ── Admin — usuarios edit/estado/audit (Phase 6) ───────────────
+  async updateUsuarioAdmin(
+    id: number,
+    payload: { nombre?: string; rol?: string; reason: string }
+  ): Promise<{ ok: boolean; auditId?: number; error?: string }> {
+    const response = await fetch(`${API_URL}/api/admin/usuarios/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+
+  async changeUsuarioEstadoAdmin(
+    id: number,
+    payload: { activo: boolean; reason: string }
+  ): Promise<{ ok: boolean; activo?: boolean; auditId?: number; error?: string }> {
+    const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/estado`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+
+  async getUsuarioAudit(id: number): Promise<{ ok: boolean; data: AuditLogRow[] }> {
+    const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/audit`, {
+      headers: authHeaders(),
+    });
+    return response.json();
   },
 };
