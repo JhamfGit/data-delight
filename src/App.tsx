@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminUsers from "./pages/AdminUsers";
+import AdminRegistros from "./pages/AdminRegistros";
+import AdminRegistroDetail from "./pages/AdminRegistroDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +50,22 @@ const App = () => (
             element={
               <AdminRoute>
                 <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/registros"
+            element={
+              <AdminRoute>
+                <AdminRegistros />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/registros/:id"
+            element={
+              <AdminRoute>
+                <AdminRegistroDetail />
               </AdminRoute>
             }
           />
