@@ -6,19 +6,23 @@
 import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
 import "dotenv/config";
+import { validateSeedCredentials, SeedPolicyError } from "./lib/seedPolicy.js";
 
-if (!process.env.ADMIN_USERNAME || process.env.ADMIN_USERNAME.trim() === "") {
-  console.error("FATAL: ADMIN_USERNAME environment variable is required and has no fallback default. Refusing to seed.");
-  process.exit(1);
-}
-if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.trim() === "") {
-  console.error("FATAL: ADMIN_PASSWORD environment variable is required and has no fallback default. Refusing to seed.");
-  process.exit(1);
+// The credential-required check lives in lib/seedPolicy.js (pure,
+// unit-tested) so this is only the wiring into process.exit(1) — same
+// observable behavior as before the extraction.
+let ADMIN_USERNAME, ADMIN_PASSWORD;
+try {
+  ({ adminUsername: ADMIN_USERNAME, adminPassword: ADMIN_PASSWORD } = validateSeedCredentials(process.env));
+} catch (err) {
+  if (err instanceof SeedPolicyError) {
+    console.error(`FATAL: ${err.message}`);
+    process.exit(1);
+  }
+  throw err;
 }
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const ADMIN_NOMBRE   = process.env.ADMIN_NOMBRE || "Administrador Regency";
+const ADMIN_NOMBRE = process.env.ADMIN_NOMBRE || "Administrador Regency";
 
 async function seed() {
   const connection = await mysql.createConnection({
