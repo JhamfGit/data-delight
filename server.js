@@ -3,6 +3,12 @@ import mysql from "mysql2/promise";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import {
+  listRegistros,
+  getRegistroDetail,
+  changeRegistroStatus,
+  getRegistroAuditLog,
+} from "./lib/registrosService.js";
 
 const app = express();
 app.use(cors());
@@ -147,49 +153,69 @@ app.get("/api/registros", authenticateToken, async (req, res) => {
       return res.json({ ok: true, data: rows });
     }
 
-    const page  = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit = Math.max(1, parseInt(req.query.limit) || 10);
-    const offset = (page - 1) * limit;
+    // Filtros + scope (admin: todos; operador: solo los propios) —
+    // extraído a lib/registrosService.js (design D1 / spec "Role-Scoped
+    // Registro Search, Filter, and Detail").
+    const { q, status, proyecto, centro_operacion, page, pageSize, limit } = req.query;
+    const result = await listRegistros(pool, req.user, {
+      q,
+      status,
+      proyecto,
+      centro_operacion,
+      page,
+      pageSize: pageSize || limit, // `limit` kept as a back-compat alias
+    });
 
-    let countQuery, dataQuery, countParams, dataParams;
-
-    if (req.user.rol === "admin") {
-      // Admin ve todos los registros con nombre de usuario
-      countQuery  = "SELECT COUNT(*) AS total FROM registros";
-      countParams = [];
-      dataQuery   = `
-        SELECT r.*, u.username AS usuario_nombre
-        FROM registros r
-        LEFT JOIN usuarios u ON r.user_id = u.id
-        ORDER BY r.id_registro DESC
-        LIMIT ? OFFSET ?
-      `;
-      dataParams  = [limit, offset];
-    } else {
-      // Operador ve solo sus propios registros
-      countQuery  = "SELECT COUNT(*) AS total FROM registros WHERE user_id = ?";
-      countParams = [req.user.id];
-      dataQuery   = `
-        SELECT * FROM registros
-        WHERE user_id = ?
-        ORDER BY id_registro DESC
-        LIMIT ? OFFSET ?
-      `;
-      dataParams  = [req.user.id, limit, offset];
-    }
-
-    const [countRows] = await pool.query(countQuery, countParams);
-    const total = countRows[0]?.total ? Number(countRows[0].total) : 0;
-
-    const [rows] = await pool.query(dataQuery, dataParams);
-
-    const totalPages = Math.ceil(total / limit) || 1;
-
-    console.log(`✅ Registros obtenidos: ${rows.length} (total ${total}, página ${page}/${totalPages}) — usuario: ${req.user.username}`);
-    res.json({ ok: true, data: rows, pagination: { total, page, limit, totalPages } });
+    console.log(
+      `✅ Registros obtenidos: ${result.body.data.length} (total ${result.body.pagination.total}, página ${result.body.pagination.page}/${result.body.pagination.totalPages}) — usuario: ${req.user.username}`
+    );
+    res.status(result.httpStatus).json(result.body);
   } catch (error) {
     console.error("❌ Error DB obteniendo registros:", error);
     res.status(500).json({ ok: false, error: "Error obteniendo registros: " + error.message });
+  }
+});
+
+/** GET /api/registros/:id — detalle de un registro (design API Surface) */
+app.get("/api/registros/:id", authenticateToken, async (req, res) => {
+  try {
+    const result = await getRegistroDetail(pool, req.user, req.params.id);
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB obteniendo registro:", error);
+    res.status(500).json({ ok: false, error: "Error obteniendo registro" });
+  }
+});
+
+/**
+ * PATCH /api/registros/:id/status — corrección auditada de status
+ * (design D4). Body: { fromStatus, toStatus, reason }.
+ */
+app.patch("/api/registros/:id/status", authenticateToken, async (req, res) => {
+  try {
+    const { fromStatus, toStatus, reason } = req.body;
+    const result = await changeRegistroStatus(pool, {
+      actor: req.user,
+      id: req.params.id,
+      fromStatus,
+      toStatus,
+      reason,
+    });
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB actualizando status:", error);
+    res.status(500).json({ ok: false, error: "Error actualizando status" });
+  }
+});
+
+/** GET /api/registros/:id/audit — historial de auditoría del registro */
+app.get("/api/registros/:id/audit", authenticateToken, async (req, res) => {
+  try {
+    const result = await getRegistroAuditLog(pool, req.user, req.params.id);
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB obteniendo auditoría:", error);
+    res.status(500).json({ ok: false, error: "Error obteniendo auditoría" });
   }
 });
 
