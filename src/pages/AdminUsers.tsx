@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { UsuarioEditDialog } from "@/components/admin/UsuarioEditDialog";
 import { UsuarioEstadoDialog } from "@/components/admin/UsuarioEstadoDialog";
-import { UserPlus, ArrowLeft, Shield, Users, Pencil, Power, ListFilter } from "lucide-react";
+import { UsuarioAuditDialog } from "@/components/admin/UsuarioAuditDialog";
+import { UserPlus, ArrowLeft, Shield, Users, Pencil, Power, History, ListFilter } from "lucide-react";
 
 const AdminUsers = () => {
   const navigate   = useNavigate();
@@ -28,6 +29,7 @@ const AdminUsers = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editTarget, setEditTarget]     = useState<AdminUser | null>(null);
   const [estadoTarget, setEstadoTarget] = useState<AdminUser | null>(null);
+  const [auditTarget, setAuditTarget]   = useState<AdminUser | null>(null);
 
   // Formulario de creación
   const [form, setForm] = useState({
@@ -250,6 +252,14 @@ const AdminUsers = () => {
                             >
                               <Power className="h-4 w-4" />
                             </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Ver auditoría"
+                              onClick={() => setAuditTarget(u)}
+                            >
+                              <History className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -373,6 +383,15 @@ const AdminUsers = () => {
           onConfirm={(id, payload) => estadoMutation.mutate({ id, payload })}
         />
       )}
+
+      {/* Auditoría del usuario (sdd-verify CRITICAL-2 fix): reutiliza
+          AuditTimeline, ya construido para la auditoría de registros, para
+          renderizar el historial de admin_audit_log de este usuario. */}
+      <UsuarioAuditDialog
+        open={!!auditTarget}
+        onOpenChange={(open) => !open && setAuditTarget(null)}
+        usuario={auditTarget}
+      />
     </div>
   );
 };
