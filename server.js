@@ -16,6 +16,7 @@ import {
   deleteUsuarioGuarded,
   getUsuarioAuditLog,
 } from "./lib/usuariosService.js";
+import { loadConfig, ConfigError } from "./lib/config.js";
 
 const app = express();
 app.use(cors());
@@ -37,11 +38,19 @@ const pool = mysql.createPool({
 // security finding -- anyone who saw the source code could forge valid
 // tokens against any deployment that forgot to set JWT_SECRET. The
 // server now refuses to start instead of running with a known secret.
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === "") {
-  console.error("FATAL: JWT_SECRET environment variable is required and has no fallback default. Refusing to start.");
-  process.exit(1);
+// The check itself lives in lib/config.js (pure, unit-tested) so this is
+// only the wiring into process.exit(1) — same observable behavior as
+// before the extraction.
+let JWT_SECRET;
+try {
+  ({ jwtSecret: JWT_SECRET } = loadConfig(process.env));
+} catch (err) {
+  if (err instanceof ConfigError) {
+    console.error(`FATAL: ${err.message}`);
+    process.exit(1);
+  }
+  throw err;
 }
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // ─── Middlewares ──────────────────────────────────────────────
 
