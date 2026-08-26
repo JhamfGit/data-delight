@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminUser } from "@/types/employee";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -17,18 +18,16 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { UserPlus, Trash2, ArrowLeft, Shield, Users } from "lucide-react";
+import { UsuarioEditDialog } from "@/components/admin/UsuarioEditDialog";
+import { UsuarioEstadoDialog } from "@/components/admin/UsuarioEstadoDialog";
+import { UserPlus, ArrowLeft, Shield, Users, Pencil, Power, ListFilter } from "lucide-react";
 
 const AdminUsers = () => {
   const navigate   = useNavigate();
-  const [usuarios, setUsuarios]       = useState<AdminUser[]>([]);
-  const [loading, setLoading]         = useState(false);
+  const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [deleteTarget, setDeleteTarget]       = useState<AdminUser | null>(null);
+  const [editTarget, setEditTarget]     = useState<AdminUser | null>(null);
+  const [estadoTarget, setEstadoTarget] = useState<AdminUser | null>(null);
 
   // Formulario de creación
   const [form, setForm] = useState({
@@ -41,21 +40,60 @@ const AdminUsers = () => {
 
   const currentUserId = Number(localStorage.getItem("userId"));
 
-  const loadUsuarios = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await api.getUsuarios();
-      setUsuarios(data);
-    } catch {
-      toast.error("Error al cargar usuarios");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const usuariosQuery = useQuery({
+    queryKey: ["usuarios"],
+    queryFn: () => api.getUsuarios(),
+  });
+  const usuarios = usuariosQuery.data ?? [];
+  const loading = usuariosQuery.isLoading;
 
-  useEffect(() => {
-    loadUsuarios();
-  }, [loadUsuarios]);
+  const invalidateUsuario = (id: number) => {
+    queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+    queryClient.invalidateQueries({ queryKey: ["audit", "usuario", String(id)] });
+  };
+
+  const editNombreMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { nombre: string; reason: string } }) =>
+      api.updateUsuarioAdmin(id, payload),
+    onSuccess: (result, { id }) => {
+      if (!result.ok) {
+        toast.error(result.error || "No se pudo actualizar el nombre");
+        return;
+      }
+      toast.success("Nombre actualizado y auditado");
+      invalidateUsuario(id);
+    },
+    onError: () => toast.error("Error de conexión"),
+  });
+
+  const editRolMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { rol: string; reason: string } }) =>
+      api.updateUsuarioAdmin(id, payload),
+    onSuccess: (result, { id }) => {
+      if (!result.ok) {
+        toast.error(result.error || "No se pudo actualizar el rol");
+        return;
+      }
+      toast.success("Rol actualizado y auditado");
+      invalidateUsuario(id);
+    },
+    onError: () => toast.error("Error de conexión"),
+  });
+
+  const estadoMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { activo: boolean; reason: string } }) =>
+      api.changeUsuarioEstadoAdmin(id, payload),
+    onSuccess: (result, { id }) => {
+      if (!result.ok) {
+        toast.error(result.error || "No se pudo actualizar el estado");
+        return;
+      }
+      toast.success("Estado actualizado y auditado");
+      setEstadoTarget(null);
+      invalidateUsuario(id);
+    },
+    onError: () => toast.error("Error de conexión"),
+  });
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +116,7 @@ const AdminUsers = () => {
         toast.success(`Usuario "${form.username}" creado exitosamente`);
         setShowCreateModal(false);
         setForm({ username: "", password: "", nombre: "", rol: "operador" });
-        await loadUsuarios();
+        queryClient.invalidateQueries({ queryKey: ["usuarios"] });
       } else {
         toast.error(result.error || "Error al crear el usuario");
       }
@@ -86,25 +124,6 @@ const AdminUsers = () => {
       toast.error("Error de conexión");
     } finally {
       setFormLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      setLoading(true);
-      const result = await api.deleteUsuario(deleteTarget.id);
-      if (result.ok) {
-        toast.success(`Usuario "${deleteTarget.username}" eliminado`);
-        await loadUsuarios();
-      } else {
-        toast.error(result.error || "Error al eliminar el usuario");
-      }
-    } catch {
-      toast.error("Error de conexión");
-    } finally {
-      setLoading(false);
-      setDeleteTarget(null);
     }
   };
 
@@ -122,6 +141,13 @@ const AdminUsers = () => {
             </h1>
             <p className="text-primary-foreground/80">Gestión de usuarios del sistema</p>
           </div>
+          <button
+            onClick={() => navigate("/admin/registros")}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+          >
+            <ListFilter className="h-4 w-4" />
+            <span className="hidden md:inline">Registros</span>
+          </button>
           <button
             onClick={() => navigate("/dashboard")}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
@@ -199,16 +225,32 @@ const AdminUsers = () => {
                           {new Date(u.created_at).toLocaleDateString("es-CO")}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            disabled={u.id === currentUserId}
-                            title={u.id === currentUserId ? "No podés eliminarte a vos mismo" : "Eliminar usuario"}
-                            onClick={() => setDeleteTarget(u)}
-                            className="hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Editar usuario"
+                              onClick={() => setEditTarget(u)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={u.id === currentUserId}
+                              title={
+                                u.id === currentUserId
+                                  ? "No podés desactivarte a vos mismo"
+                                  : u.activo
+                                    ? "Desactivar usuario"
+                                    : "Reactivar usuario"
+                              }
+                              onClick={() => setEstadoTarget(u)}
+                              className="disabled:opacity-30"
+                            >
+                              <Power className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -305,28 +347,32 @@ const AdminUsers = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Alert Dialog — Confirmar eliminación */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Estás por eliminar a <strong>{deleteTarget?.nombre}</strong> (@{deleteTarget?.username}).
-              Sus registros en BD permanecerán pero sin asociación de usuario.
-              Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Editar usuario — nombre XOR rol, un campo por guardado (ver
+          UsuarioEditDialog — admin_audit_log es una fila por campo) */}
+      {editTarget && (
+        <UsuarioEditDialog
+          open={!!editTarget}
+          onOpenChange={(open) => !open && setEditTarget(null)}
+          usuario={editTarget}
+          isSubmittingNombre={editNombreMutation.isPending}
+          isSubmittingRol={editRolMutation.isPending}
+          onSaveNombre={(id, payload) => editNombreMutation.mutate({ id, payload })}
+          onSaveRol={(id, payload) => editRolMutation.mutate({ id, payload })}
+        />
+      )}
+
+      {/* Activar/desactivar — reemplaza la acción de eliminar; el DELETE
+          guardado en el backend (409 user_has_history) ya no se expone en
+          la UI (intención del proposal: "no hard-delete exposed"). */}
+      {estadoTarget && (
+        <UsuarioEstadoDialog
+          open={!!estadoTarget}
+          onOpenChange={(open) => !open && setEstadoTarget(null)}
+          usuario={estadoTarget}
+          isSubmitting={estadoMutation.isPending}
+          onConfirm={(id, payload) => estadoMutation.mutate({ id, payload })}
+        />
+      )}
     </div>
   );
 };
