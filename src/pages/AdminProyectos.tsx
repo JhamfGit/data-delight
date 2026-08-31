@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -19,13 +20,17 @@ import {
 import { FolderKanban, Plus, Pencil, Trash2, ArrowLeft, AlertTriangle } from "lucide-react";
 
 /**
- * Warning shown in every create/rename/delete dialog: this app never talks
- * to Chatwoot's API -- a different service (regency_rrhh_automamtion) reads
- * `registros.proyecto` by exact string match to route WhatsApp conversations
- * to a Chatwoot team label. A proyecto here with no matching label there
- * silently fails to route, which has already bitten this client once
- * (CPC2526/CPC256 label mismatch). The checkbox is required, not just a
- * passive message, so the admin cannot skip acknowledging it.
+ * Warning shown in every create/rename/delete dialog. This app keeps
+ * `proyectos` and `automation_project_team` (the sibling
+ * regency_rrhh_automamtion service's Chatwoot routing table -- a
+ * different, independently-deployed repo, but the exact same MySQL
+ * database) in sync automatically now: the `teamSlug` typed in below
+ * gets written to both tables in one transaction. What this form
+ * CANNOT do is create/rename/delete the actual label inside Chatwoot
+ * itself -- that stays a manual step in Chatwoot's own UI, and the
+ * checkbox exists so the admin cannot skip acknowledging it (an
+ * incident already happened once from a proyecto with no matching
+ * Chatwoot label at all).
  */
 function ChatwootWarning({ children }: { children: React.ReactNode }) {
   return (
@@ -45,9 +50,11 @@ const AdminProyectos = () => {
   const [deleteTarget, setDeleteTarget] = useState<Proyecto | null>(null);
 
   const [createNombre, setCreateNombre] = useState("");
+  const [createTeamSlug, setCreateTeamSlug] = useState("");
   const [createAck, setCreateAck] = useState(false);
 
   const [editNombre, setEditNombre] = useState("");
+  const [editTeamSlug, setEditTeamSlug] = useState("");
   const [editReason, setEditReason] = useState("");
   const [editAck, setEditAck] = useState(false);
 
@@ -66,17 +73,22 @@ const AdminProyectos = () => {
   };
 
   const createMutation = useMutation({
-    mutationFn: (nombre: string) => api.createProyecto(nombre),
-    onSuccess: (result, nombre) => {
+    mutationFn: ({ nombre, teamSlug }: { nombre: string; teamSlug: string }) => api.createProyecto(nombre, teamSlug),
+    onSuccess: (result, { nombre }) => {
       if (!result.ok) {
         toast.error(
-          result.error === "nombre_duplicado" ? "Ya existe un proyecto con ese nombre" : (result.error || "No se pudo crear el proyecto")
+          result.error === "nombre_duplicado"
+            ? "Ya existe un proyecto con ese nombre"
+            : result.error === "team_slug_required"
+              ? "La etiqueta en la plataforma omnicanal es obligatoria"
+              : result.error || "No se pudo crear el proyecto"
         );
         return;
       }
-      toast.success(`Proyecto "${nombre}" creado. Recuerda crear también la etiqueta en la plataforma omnicanal.`);
+      toast.success(`Proyecto "${nombre}" creado y enlazado a la etiqueta "${result.teamSlug}". Falta crear esa etiqueta en la plataforma omnicanal si aún no existe.`);
       setShowCreateModal(false);
       setCreateNombre("");
+      setCreateTeamSlug("");
       setCreateAck(false);
       invalidateProyectos();
     },
@@ -84,16 +96,20 @@ const AdminProyectos = () => {
   });
 
   const renameMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: { nombre: string; reason: string } }) =>
+    mutationFn: ({ id, payload }: { id: number; payload: { nombre: string; reason: string; teamSlug: string } }) =>
       api.renameProyecto(id, payload),
     onSuccess: (result) => {
       if (!result.ok) {
         toast.error(
-          result.error === "nombre_duplicado" ? "Ya existe un proyecto con ese nombre" : (result.error || "No se pudo renombrar el proyecto")
+          result.error === "nombre_duplicado"
+            ? "Ya existe un proyecto con ese nombre"
+            : result.error === "team_slug_required"
+              ? "La etiqueta en la plataforma omnicanal es obligatoria"
+              : result.error || "No se pudo renombrar el proyecto"
         );
         return;
       }
-      toast.success(`Proyecto renombrado a "${result.nombre}". Recuerda actualizar también la etiqueta en la plataforma omnicanal.`);
+      toast.success(`Proyecto renombrado a "${result.nombre}" (etiqueta: "${result.teamSlug}"). Actualiza esa etiqueta en la plataforma omnicanal si cambió.`);
       setEditTarget(null);
       invalidateProyectos();
     },
@@ -111,26 +127,33 @@ const AdminProyectos = () => {
         }
         return;
       }
-      toast.success("Proyecto eliminado. Recuerda eliminar también la etiqueta en la plataforma omnicanal.");
+      toast.success("Proyecto y su enlace de enrutamiento eliminados. Recuerda eliminar también la etiqueta en la plataforma omnicanal.");
       setDeleteTarget(null);
       invalidateProyectos();
     },
     onError: () => toast.error("Error de conexión"),
   });
 
-  const canCreate = createNombre.trim() !== "" && createAck && !createMutation.isPending;
-  const canEdit = editNombre.trim() !== "" && editReason.trim() !== "" && editAck && !renameMutation.isPending;
+  const canCreate =
+    createNombre.trim() !== "" && createTeamSlug.trim() !== "" && createAck && !createMutation.isPending;
+  const canEdit =
+    editNombre.trim() !== "" &&
+    editTeamSlug.trim() !== "" &&
+    editReason.trim() !== "" &&
+    editAck &&
+    !renameMutation.isPending;
   const canDelete = deleteReason.trim() !== "" && deleteAck && !deleteMutation.isPending;
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canCreate) return;
-    createMutation.mutate(createNombre.trim());
+    createMutation.mutate({ nombre: createNombre.trim(), teamSlug: createTeamSlug.trim() });
   };
 
   const openEdit = (p: Proyecto) => {
     setEditTarget(p);
     setEditNombre(p.nombre);
+    setEditTeamSlug(p.teamSlug ?? "");
     setEditReason("");
     setEditAck(false);
   };
@@ -194,6 +217,7 @@ const AdminProyectos = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Etiqueta plataforma omnicanal</TableHead>
                     <TableHead>Creado</TableHead>
                     <TableHead />
                   </TableRow>
@@ -201,7 +225,7 @@ const AdminProyectos = () => {
                 <TableBody>
                   {proyectos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         No hay proyectos registrados.
                       </TableCell>
                     </TableRow>
@@ -209,6 +233,13 @@ const AdminProyectos = () => {
                     proyectos.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.nombre}</TableCell>
+                        <TableCell>
+                          {p.teamSlug ? (
+                            <Badge variant={p.teamActive ? "default" : "secondary"}>{p.teamSlug}</Badge>
+                          ) : (
+                            <Badge variant="destructive">Sin etiqueta</Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(p.created_at).toLocaleDateString("es-CO")}
                         </TableCell>
@@ -253,10 +284,20 @@ const AdminProyectos = () => {
                   required
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="create-team-slug">Etiqueta en la plataforma omnicanal *</Label>
+                <Input
+                  id="create-team-slug"
+                  placeholder="Ej: ruta-sur"
+                  value={createTeamSlug}
+                  onChange={(e) => setCreateTeamSlug(e.target.value)}
+                  required
+                />
+              </div>
               <ChatwootWarning>
-                Al crear un proyecto también debes crear la etiqueta correspondiente en la plataforma
-                omnicanal; si no lo haces, las conversaciones de este proyecto no se enrutarán
-                correctamente.
+                Este nombre de etiqueta se guarda como la clave de enrutamiento del proyecto. La
+                etiqueta en sí debe existir (o vas a crearla) en la plataforma omnicanal -- este
+                formulario no la crea por vos.
               </ChatwootWarning>
               <div className="flex items-start gap-2">
                 <Checkbox
@@ -265,8 +306,8 @@ const AdminProyectos = () => {
                   onCheckedChange={(v) => setCreateAck(v === true)}
                 />
                 <Label htmlFor="create-ack" className="text-sm font-normal leading-tight">
-                  Confirmo que también crearé la etiqueta correspondiente en la plataforma omnicanal
-                  para este proyecto.
+                  Confirmo que la etiqueta{createTeamSlug.trim() ? ` "${createTeamSlug.trim()}"` : ""} ya existe o la
+                  crearé en la plataforma omnicanal.
                 </Label>
               </div>
             </div>
@@ -292,12 +333,19 @@ const AdminProyectos = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar proyecto — {editTarget?.nombre}</DialogTitle>
-            <DialogDescription>Cambiar el nombre requiere un motivo; queda auditado.</DialogDescription>
+            <DialogDescription>Cambiar el nombre o la etiqueta requiere un motivo; queda auditado.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="edit-nombre">Nuevo nombre</Label>
               <Input id="edit-nombre" value={editNombre} onChange={(e) => setEditNombre(e.target.value)} />
+              <Label htmlFor="edit-team-slug">Etiqueta en la plataforma omnicanal</Label>
+              <Input
+                id="edit-team-slug"
+                placeholder="Ej: ruta-sur"
+                value={editTeamSlug}
+                onChange={(e) => setEditTeamSlug(e.target.value)}
+              />
               <Label htmlFor="edit-reason">Motivo del cambio</Label>
               <Textarea
                 id="edit-reason"
@@ -307,13 +355,14 @@ const AdminProyectos = () => {
               />
             </div>
             <ChatwootWarning>
-              Al editar el nombre también debes actualizar la etiqueta correspondiente en la plataforma
-              omnicanal para que siga apuntando a este proyecto.
+              Si cambiás la etiqueta, este formulario mueve el enrutamiento automáticamente -- pero la
+              etiqueta en sí debe existir con ese nombre en la plataforma omnicanal.
             </ChatwootWarning>
             <div className="flex items-start gap-2">
               <Checkbox id="edit-ack" checked={editAck} onCheckedChange={(v) => setEditAck(v === true)} />
               <Label htmlFor="edit-ack" className="text-sm font-normal leading-tight">
-                Confirmo que también actualizaré la etiqueta correspondiente en la plataforma omnicanal.
+                Confirmo que la etiqueta{editTeamSlug.trim() ? ` "${editTeamSlug.trim()}"` : ""} ya existe o la
+                actualizaré en la plataforma omnicanal.
               </Label>
             </div>
           </div>
@@ -328,7 +377,7 @@ const AdminProyectos = () => {
                 editTarget &&
                 renameMutation.mutate({
                   id: editTarget.id,
-                  payload: { nombre: editNombre.trim(), reason: editReason.trim() },
+                  payload: { nombre: editNombre.trim(), reason: editReason.trim(), teamSlug: editTeamSlug.trim() },
                 })
               }
             >
@@ -358,8 +407,8 @@ const AdminProyectos = () => {
               />
             </div>
             <ChatwootWarning>
-              Al eliminar este proyecto también debes eliminar la etiqueta correspondiente en la
-              plataforma omnicanal.
+              Esto también elimina el enlace de enrutamiento{deleteTarget?.teamSlug ? ` a la etiqueta "${deleteTarget.teamSlug}"` : ""}.
+              Recuerda eliminar esa etiqueta en la plataforma omnicanal por separado si ya no la usás.
             </ChatwootWarning>
             <div className="flex items-start gap-2">
               <Checkbox id="delete-ack" checked={deleteAck} onCheckedChange={(v) => setDeleteAck(v === true)} />

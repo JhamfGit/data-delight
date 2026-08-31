@@ -41,4 +41,7 @@ export interface Proyecto {
   id: number;
   nombre: string;
   created_at: string;
+  /** The sibling automation service's Chatwoot routing key -- `null` when this proyecto has no mapping row yet. */
+  teamSlug: string | null;
+  teamActive: boolean;
 }

@@ -434,7 +434,7 @@ app.get("/api/proyectos", authenticateToken, async (req, res) => {
 /** POST /api/proyectos — admin-only, sin auditoría (mismo criterio que crear usuario) */
 app.post("/api/proyectos", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const result = await createProyecto(pool, { nombre: req.body.nombre });
+    const result = await createProyecto(pool, { nombre: req.body.nombre, teamSlug: req.body.teamSlug });
     if (result.httpStatus === 201) {
       console.log(`✅ Proyecto creado: ${result.body.nombre} — solicitado por: ${req.user.username}`);
     }
@@ -453,6 +453,7 @@ app.patch("/api/proyectos/:id", authenticateToken, requireAdmin, async (req, res
       id: req.params.id,
       nombre: req.body.nombre,
       reason: req.body.reason,
+      teamSlug: req.body.teamSlug,
     });
     if (result.httpStatus === 200) {
       console.log(`✅ Proyecto ${req.params.id} renombrado a "${result.body.nombre}" — solicitado por: ${req.user.username}`);

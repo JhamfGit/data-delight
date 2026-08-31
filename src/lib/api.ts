@@ -292,19 +292,22 @@ export const api = {
     }
   },
 
-  async createProyecto(nombre: string): Promise<{ ok: boolean; id?: number; nombre?: string; error?: string }> {
+  async createProyecto(
+    nombre: string,
+    teamSlug: string
+  ): Promise<{ ok: boolean; id?: number; nombre?: string; teamSlug?: string; error?: string }> {
     const response = await fetch(`${API_URL}/api/proyectos`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({ nombre, teamSlug }),
     });
     return response.json();
   },
 
   async renameProyecto(
     id: number,
-    data: { nombre: string; reason: string }
-  ): Promise<{ ok: boolean; nombre?: string; auditId?: number; error?: string }> {
+    data: { nombre: string; reason: string; teamSlug: string }
+  ): Promise<{ ok: boolean; nombre?: string; teamSlug?: string; auditId?: number; error?: string }> {
     const response = await fetch(`${API_URL}/api/proyectos/${id}`, {
       method: "PATCH",
       headers: authHeaders(),
