@@ -24,6 +24,13 @@ interface DataTableProps {
   pagination?: Pagination;
   onPageChange?: (page: number) => void;
   showUserColumn?: boolean;
+  /**
+   * Controla el botón "Limpiar" y el borrado por fila. Solo aplica en
+   * modo 'saved' (registros ya en BD) -- en modo 'pending' borrar es
+   * puramente local, nunca toca la base de datos, así que cualquier
+   * usuario puede hacerlo. Default true para no romper otros llamadores.
+   */
+  canDelete?: boolean;
 }
 
 const DataTable = ({
@@ -35,6 +42,7 @@ const DataTable = ({
   pagination,
   onPageChange,
   showUserColumn = false,
+  canDelete = true,
 }: DataTableProps) => {
   const [exportingAll, setExportingAll] = useState(false);
 
@@ -112,7 +120,9 @@ const DataTable = ({
 
   const isPending = mode === "pending";
   const isSaved   = mode === "saved";
-  const colSpan   = showUserColumn ? 9 : 8;
+  // Borrar un registro 'pending' nunca toca la BD -- solo 'saved' respeta `canDelete`.
+  const showDeleteControls = isPending || canDelete;
+  const colSpan = 7 + (showUserColumn ? 1 : 0) + (showDeleteControls ? 1 : 0);
 
   return (
     <Card className="card-shadow border-0">
@@ -202,15 +212,17 @@ const DataTable = ({
               </Button>
             )}
 
-            <Button
-              size="sm"
-              onClick={onClear}
-              disabled={data.length === 0 && (!pagination || pagination.total === 0)}
-              className="bg-destructive text-white"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpiar
-            </Button>
+            {showDeleteControls && (
+              <Button
+                size="sm"
+                onClick={onClear}
+                disabled={data.length === 0 && (!pagination || pagination.total === 0)}
+                className="bg-destructive text-white"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpiar
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -227,7 +239,7 @@ const DataTable = ({
               <TableHead>Número</TableHead>
               <TableHead>Estado</TableHead>
               {showUserColumn && <TableHead>Usuario</TableHead>}
-              <TableHead />
+              {showDeleteControls && <TableHead />}
             </TableRow>
           </TableHeader>
 
@@ -259,16 +271,18 @@ const DataTable = ({
                       {item.usuarioNombre || "—"}
                     </TableCell>
                   )}
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onDelete(item.id)}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                  {showDeleteControls && (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onDelete(item.id)}
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

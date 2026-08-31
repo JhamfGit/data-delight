@@ -262,26 +262,16 @@ app.post("/api/registros", authenticateToken, async (req, res) => {
   }
 });
 
-/** DELETE /api/registros/:id */
-app.delete("/api/registros/:id", authenticateToken, async (req, res) => {
+/** DELETE /api/registros/:id — solo admin */
+app.delete("/api/registros/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`🗑️ Eliminando registro ID: ${id} — solicitado por: ${req.user.username}`);
 
-    // Admin puede eliminar cualquiera; operador solo los suyos
-    let query, params;
-    if (req.user.rol === "admin") {
-      query  = "DELETE FROM registros WHERE id_registro = ?";
-      params = [id];
-    } else {
-      query  = "DELETE FROM registros WHERE id_registro = ? AND user_id = ?";
-      params = [id, req.user.id];
-    }
-
-    const [result] = await pool.execute(query, params);
+    const [result] = await pool.execute("DELETE FROM registros WHERE id_registro = ?", [id]);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ ok: false, error: "Registro no encontrado o sin permiso" });
+      return res.status(404).json({ ok: false, error: "Registro no encontrado" });
     }
 
     console.log(`✅ Registro ${id} eliminado`);
@@ -292,19 +282,12 @@ app.delete("/api/registros/:id", authenticateToken, async (req, res) => {
   }
 });
 
-/** DELETE /api/registros — limpia registros del usuario (admin = todos) */
-app.delete("/api/registros", authenticateToken, async (req, res) => {
+/** DELETE /api/registros — limpia TODOS los registros; solo admin */
+app.delete("/api/registros", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    console.log(`🗑️ Limpiando registros — solicitado por: ${req.user.username} (${req.user.rol})`);
-
-    if (req.user.rol === "admin") {
-      await pool.execute("DELETE FROM registros");
-      console.log("✅ Todos los registros eliminados (admin)");
-    } else {
-      await pool.execute("DELETE FROM registros WHERE user_id = ?", [req.user.id]);
-      console.log(`✅ Registros del usuario ${req.user.username} eliminados`);
-    }
-
+    console.log(`🗑️ Limpiando todos los registros — solicitado por: ${req.user.username}`);
+    await pool.execute("DELETE FROM registros");
+    console.log("✅ Todos los registros eliminados");
     res.json({ ok: true, message: "Registros eliminados" });
   } catch (error) {
     console.error("❌ Error DB:", error);

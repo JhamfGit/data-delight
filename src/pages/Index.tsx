@@ -255,6 +255,7 @@ const Index = () => {
           pagination={pagination}
           onPageChange={loadSavedEmployees}
           showUserColumn={userRol === "admin"}
+          canDelete={userRol === "admin"}
         />
       </main>
 
