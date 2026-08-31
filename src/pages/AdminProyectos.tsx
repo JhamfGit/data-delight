@@ -295,9 +295,8 @@ const AdminProyectos = () => {
                 />
               </div>
               <ChatwootWarning>
-                Este nombre de etiqueta se guarda como la clave de enrutamiento del proyecto. La
-                etiqueta en sí debe existir (o vas a crearla) en la plataforma omnicanal -- este
-                formulario no la crea por vos.
+                Este nombre se guarda como clave de enrutamiento del proyecto. La etiqueta debe
+                existir en la plataforma omnicanal; este formulario no la crea.
               </ChatwootWarning>
               <div className="flex items-start gap-2">
                 <Checkbox
