@@ -36,3 +36,9 @@ export interface Pagination {
   limit: number;
   totalPages: number;
 }
+
+export interface Proyecto {
+  id: number;
+  nombre: string;
+  created_at: string;
+}

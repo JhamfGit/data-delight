@@ -16,6 +16,12 @@ import {
   deleteUsuarioGuarded,
   getUsuarioAuditLog,
 } from "./lib/usuariosService.js";
+import {
+  listProyectos,
+  createProyecto,
+  renameProyecto,
+  deleteProyectoGuarded,
+} from "./lib/proyectosService.js";
 import { loadConfig, ConfigError } from "./lib/config.js";
 
 const app = express();
@@ -409,6 +415,70 @@ app.delete("/api/admin/usuarios/:id", authenticateToken, requireAdmin, async (re
   } catch (error) {
     console.error("❌ Error DB:", error);
     res.status(500).json({ ok: false, error: "Error eliminando usuario" });
+  }
+});
+
+// ─── ADMIN — GESTIÓN DE PROYECTOS ─────────────────────────────
+
+/** GET /api/proyectos — cualquier usuario autenticado (lo necesita el formulario de registro) */
+app.get("/api/proyectos", authenticateToken, async (req, res) => {
+  try {
+    const result = await listProyectos(pool);
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB obteniendo proyectos:", error);
+    res.status(500).json({ ok: false, error: "Error obteniendo proyectos" });
+  }
+});
+
+/** POST /api/proyectos — admin-only, sin auditoría (mismo criterio que crear usuario) */
+app.post("/api/proyectos", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await createProyecto(pool, { nombre: req.body.nombre });
+    if (result.httpStatus === 201) {
+      console.log(`✅ Proyecto creado: ${result.body.nombre} — solicitado por: ${req.user.username}`);
+    }
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB creando proyecto:", error);
+    res.status(500).json({ ok: false, error: "Error creando proyecto" });
+  }
+});
+
+/** PATCH /api/proyectos/:id — admin-only, renombra y audita */
+app.patch("/api/proyectos/:id", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await renameProyecto(pool, {
+      actor: req.user,
+      id: req.params.id,
+      nombre: req.body.nombre,
+      reason: req.body.reason,
+    });
+    if (result.httpStatus === 200) {
+      console.log(`✅ Proyecto ${req.params.id} renombrado a "${result.body.nombre}" — solicitado por: ${req.user.username}`);
+    }
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB renombrando proyecto:", error);
+    res.status(500).json({ ok: false, error: "Error renombrando proyecto" });
+  }
+});
+
+/** DELETE /api/proyectos/:id — admin-only, bloqueado si tiene historial (409 proyecto_has_history) */
+app.delete("/api/proyectos/:id", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await deleteProyectoGuarded(pool, {
+      actor: req.user,
+      id: req.params.id,
+      reason: req.body.reason,
+    });
+    if (result.httpStatus === 200) {
+      console.log(`✅ Proyecto ${req.params.id} eliminado — solicitado por: ${req.user.username}`);
+    }
+    res.status(result.httpStatus).json(result.body);
+  } catch (error) {
+    console.error("❌ Error DB eliminando proyecto:", error);
+    res.status(500).json({ ok: false, error: "Error eliminando proyecto" });
   }
 });
 

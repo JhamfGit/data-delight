@@ -44,3 +44,19 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+// jsdom does not implement ResizeObserver -- @radix-ui/react-checkbox's
+// internal useSize hook calls it unconditionally on mount, so any test
+// rendering a Checkbox (e.g. AdminProyectos' Chatwoot-acknowledgment
+// checkboxes) crashes without this stub. Same category of jsdom
+// gap-filling as matchMedia/localStorage above.
+class StubResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+  writable: true,
+  value: StubResizeObserver,
+});

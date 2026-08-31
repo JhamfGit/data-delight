@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminUsers from "./pages/AdminUsers";
+import AdminProyectos from "./pages/AdminProyectos";
 import AdminRegistros from "./pages/AdminRegistros";
 import AdminRegistroDetail from "./pages/AdminRegistroDetail";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,14 @@ const App = () => (
             element={
               <AdminRoute>
                 <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/proyectos"
+            element={
+              <AdminRoute>
+                <AdminProyectos />
               </AdminRoute>
             }
           />

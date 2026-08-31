@@ -21,7 +21,7 @@ import {
 import { UsuarioEditDialog } from "@/components/admin/UsuarioEditDialog";
 import { UsuarioEstadoDialog } from "@/components/admin/UsuarioEstadoDialog";
 import { UsuarioAuditDialog } from "@/components/admin/UsuarioAuditDialog";
-import { UserPlus, ArrowLeft, Shield, Users, Pencil, Power, History, ListFilter } from "lucide-react";
+import { UserPlus, ArrowLeft, Shield, Users, Pencil, Power, History, ListFilter, FolderKanban } from "lucide-react";
 
 const AdminUsers = () => {
   const navigate   = useNavigate();
@@ -149,6 +149,13 @@ const AdminUsers = () => {
           >
             <ListFilter className="h-4 w-4" />
             <span className="hidden md:inline">Registros</span>
+          </button>
+          <button
+            onClick={() => navigate("/admin/proyectos")}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+          >
+            <FolderKanban className="h-4 w-4" />
+            <span className="hidden md:inline">Proyectos</span>
           </button>
           <button
             onClick={() => navigate("/dashboard")}

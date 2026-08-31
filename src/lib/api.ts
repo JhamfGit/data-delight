@@ -1,4 +1,4 @@
-import { Employee, AdminUser, Pagination } from "@/types/employee";
+import { Employee, AdminUser, Pagination, Proyecto } from "@/types/employee";
 import { AuditLogRow, RegistroFilters, RegistroRow } from "@/types/admin";
 
 // ─── URL del API ──────────────────────────────────────────────
@@ -274,6 +274,50 @@ export const api = {
   async getUsuarioAudit(id: number): Promise<{ ok: boolean; data: AuditLogRow[] }> {
     const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/audit`, {
       headers: authHeaders(),
+    });
+    return response.json();
+  },
+
+  // ── Admin — proyectos ─────────────────────────────────────────
+  async getProyectos(): Promise<Proyecto[]> {
+    try {
+      const response = await fetch(`${API_URL}/api/proyectos`, {
+        headers: authHeaders(),
+      });
+      const json = await response.json();
+      return json.ok ? json.data : [];
+    } catch (error) {
+      console.error("Error obteniendo proyectos:", error);
+      return [];
+    }
+  },
+
+  async createProyecto(nombre: string): Promise<{ ok: boolean; id?: number; nombre?: string; error?: string }> {
+    const response = await fetch(`${API_URL}/api/proyectos`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ nombre }),
+    });
+    return response.json();
+  },
+
+  async renameProyecto(
+    id: number,
+    data: { nombre: string; reason: string }
+  ): Promise<{ ok: boolean; nombre?: string; auditId?: number; error?: string }> {
+    const response = await fetch(`${API_URL}/api/proyectos/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async deleteProyecto(id: number, data: { reason: string }): Promise<{ ok: boolean; error?: string }> {
+    const response = await fetch(`${API_URL}/api/proyectos/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
     });
     return response.json();
   },
