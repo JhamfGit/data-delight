@@ -20,6 +20,7 @@ export function useRegistrosFilters(): [
     proyecto: searchParams.get("proyecto") ?? EMPTY_REGISTRO_FILTERS.proyecto,
     centro_operacion:
       searchParams.get("centro_operacion") ?? EMPTY_REGISTRO_FILTERS.centro_operacion,
+    user_id: searchParams.get("user_id") ?? EMPTY_REGISTRO_FILTERS.user_id,
     page: Number(searchParams.get("page")) || EMPTY_REGISTRO_FILTERS.page,
     pageSize: Number(searchParams.get("pageSize")) || EMPTY_REGISTRO_FILTERS.pageSize,
   };

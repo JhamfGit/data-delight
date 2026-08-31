@@ -26,6 +26,7 @@ export interface RegistroFilters {
   status: string;
   proyecto: string;
   centro_operacion: string;
+  user_id: string;
   page: number;
   pageSize: number;
 }
@@ -35,6 +36,7 @@ export const EMPTY_REGISTRO_FILTERS: RegistroFilters = {
   status: "",
   proyecto: "",
   centro_operacion: "",
+  user_id: "",
   page: 1,
   pageSize: 10,
 };

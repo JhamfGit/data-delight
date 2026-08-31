@@ -100,6 +100,7 @@ export const api = {
     if (filters.status) params.set("status", filters.status);
     if (filters.proyecto) params.set("proyecto", filters.proyecto);
     if (filters.centro_operacion) params.set("centro_operacion", filters.centro_operacion);
+    if (filters.user_id) params.set("user_id", filters.user_id);
     params.set("page", String(filters.page));
     params.set("pageSize", String(filters.pageSize));
 

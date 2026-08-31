@@ -16,6 +16,7 @@ describe("useRegistrosFilters", () => {
       status: "",
       proyecto: "",
       centro_operacion: "",
+      user_id: "",
       page: 1,
       pageSize: 10,
     });
@@ -44,6 +45,19 @@ describe("useRegistrosFilters", () => {
     const [filters] = result.current;
     expect(filters.q).toBe("maria");
     expect(filters.proyecto).toBe("obra1");
+  });
+
+  it("writes a user_id filter change into the URL search params and reads it back out", () => {
+    const { result } = renderHook(() => useRegistrosFilters(), { wrapper });
+
+    act(() => {
+      const [, setFilters] = result.current;
+      setFilters({ user_id: "11" });
+    });
+
+    const [filters] = result.current;
+    expect(filters.user_id).toBe("11");
+    expect(filters.page).toBe(1);
   });
 
   it("changing the page number preserves the existing status filter", () => {

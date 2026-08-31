@@ -60,3 +60,14 @@ Object.defineProperty(window, "ResizeObserver", {
   writable: true,
   value: StubResizeObserver,
 });
+
+// jsdom implements neither the pointer-capture methods nor
+// `scrollIntoView` -- @radix-ui/react-select's popup positioning and item
+// selection call these unconditionally, so any test that opens a Select
+// and picks an option (e.g. the Proyecto/Usuario filters in
+// RegistrosFilterBar) crashes or silently no-ops without these stubs.
+// Same category of jsdom gap-filling as the shims above.
+Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture ?? (() => false);
+Element.prototype.setPointerCapture = Element.prototype.setPointerCapture ?? (() => {});
+Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture ?? (() => {});
+Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {});
