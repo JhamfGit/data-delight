@@ -74,7 +74,7 @@ const AdminProyectos = () => {
         );
         return;
       }
-      toast.success(`Proyecto "${nombre}" creado. Recuerda crear también la etiqueta en Chatwoot.`);
+      toast.success(`Proyecto "${nombre}" creado. Recuerda crear también la etiqueta en la plataforma omnicanal.`);
       setShowCreateModal(false);
       setCreateNombre("");
       setCreateAck(false);
@@ -93,7 +93,7 @@ const AdminProyectos = () => {
         );
         return;
       }
-      toast.success(`Proyecto renombrado a "${result.nombre}". Recuerda actualizar también la etiqueta en Chatwoot.`);
+      toast.success(`Proyecto renombrado a "${result.nombre}". Recuerda actualizar también la etiqueta en la plataforma omnicanal.`);
       setEditTarget(null);
       invalidateProyectos();
     },
@@ -111,7 +111,7 @@ const AdminProyectos = () => {
         }
         return;
       }
-      toast.success("Proyecto eliminado. Recuerda eliminar también la etiqueta en Chatwoot.");
+      toast.success("Proyecto eliminado. Recuerda eliminar también la etiqueta en la plataforma omnicanal.");
       setDeleteTarget(null);
       invalidateProyectos();
     },
@@ -255,8 +255,8 @@ const AdminProyectos = () => {
               </div>
               <ChatwootWarning>
                 Al crear un proyecto también debes crear la etiqueta correspondiente en la plataforma
-                multicanal (Chatwoot); si no lo haces, las conversaciones de este proyecto no se
-                enrutarán correctamente.
+                omnicanal; si no lo haces, las conversaciones de este proyecto no se enrutarán
+                correctamente.
               </ChatwootWarning>
               <div className="flex items-start gap-2">
                 <Checkbox
@@ -265,8 +265,8 @@ const AdminProyectos = () => {
                   onCheckedChange={(v) => setCreateAck(v === true)}
                 />
                 <Label htmlFor="create-ack" className="text-sm font-normal leading-tight">
-                  Confirmo que también crearé la etiqueta correspondiente en la plataforma multicanal
-                  (Chatwoot) para este proyecto.
+                  Confirmo que también crearé la etiqueta correspondiente en la plataforma omnicanal
+                  para este proyecto.
                 </Label>
               </div>
             </div>
@@ -308,12 +308,12 @@ const AdminProyectos = () => {
             </div>
             <ChatwootWarning>
               Al editar el nombre también debes actualizar la etiqueta correspondiente en la plataforma
-              multicanal (Chatwoot) para que siga apuntando a este proyecto.
+              omnicanal para que siga apuntando a este proyecto.
             </ChatwootWarning>
             <div className="flex items-start gap-2">
               <Checkbox id="edit-ack" checked={editAck} onCheckedChange={(v) => setEditAck(v === true)} />
               <Label htmlFor="edit-ack" className="text-sm font-normal leading-tight">
-                Confirmo que también actualizaré la etiqueta correspondiente en Chatwoot.
+                Confirmo que también actualizaré la etiqueta correspondiente en la plataforma omnicanal.
               </Label>
             </div>
           </div>
@@ -359,12 +359,12 @@ const AdminProyectos = () => {
             </div>
             <ChatwootWarning>
               Al eliminar este proyecto también debes eliminar la etiqueta correspondiente en la
-              plataforma multicanal (Chatwoot).
+              plataforma omnicanal.
             </ChatwootWarning>
             <div className="flex items-start gap-2">
               <Checkbox id="delete-ack" checked={deleteAck} onCheckedChange={(v) => setDeleteAck(v === true)} />
               <Label htmlFor="delete-ack" className="text-sm font-normal leading-tight">
-                Confirmo que también eliminaré la etiqueta correspondiente en Chatwoot.
+                Confirmo que también eliminaré la etiqueta correspondiente en la plataforma omnicanal.
               </Label>
             </div>
           </div>
