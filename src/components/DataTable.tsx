@@ -7,12 +7,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Pagination as PaginationNav, PaginationContent, PaginationEllipsis,
+  PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Download, Trash2, FileSpreadsheet, Play,
-  ChevronLeft, ChevronRight, History, FileDown, Loader2,
+  History, FileDown, Loader2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { getPaginationRange } from "@/lib/paginationRange";
 
 interface DataTableProps {
   data: Employee[];
@@ -291,31 +296,60 @@ const DataTable = ({
 
         {/* Paginación — solo en modo saved */}
         {isSaved && pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border">
             <span className="text-sm text-muted-foreground">
               Página <strong>{pagination.page}</strong> de <strong>{pagination.totalPages}</strong>
               {" "}· {pagination.total} registros en total
             </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pagination.page <= 1}
-                onClick={() => onPageChange?.(pagination.page - 1)}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Anterior
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => onPageChange?.(pagination.page + 1)}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+
+            <PaginationNav className="mx-0 w-auto">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    aria-disabled={pagination.page <= 1}
+                    className={pagination.page <= 1 ? "pointer-events-none opacity-50" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.page > 1) onPageChange?.(pagination.page - 1);
+                    }}
+                  />
+                </PaginationItem>
+
+                {getPaginationRange(pagination.page, pagination.totalPages).map((item, index) =>
+                  item === "…" ? (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={item}>
+                      <PaginationLink
+                        href="#"
+                        isActive={item === pagination.page}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (item !== pagination.page) onPageChange?.(item);
+                        }}
+                      >
+                        {item}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    aria-disabled={pagination.page >= pagination.totalPages}
+                    className={pagination.page >= pagination.totalPages ? "pointer-events-none opacity-50" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.page < pagination.totalPages) onPageChange?.(pagination.page + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </PaginationNav>
           </div>
         )}
       </CardContent>
