@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+# Registros Regency
 
-## Project info
+Aplicación de control de acceso/registro de personal por proyecto y centro de operación, con panel administrativo, roles, auditoría de cambios y carga masiva desde Excel.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## ¿Qué hace?
 
-## How can I edit this code?
+- **Registro de personal** (`/dashboard`): cualquier usuario autenticado registra personas (proyecto, centro de operación, cargo, cédula, nombre, número). Todo registro nuevo entra con `status = "NO"`, que dispara un flujo externo (n8n) para su procesamiento.
+- **Carga masiva por Excel**: sube un archivo `.xlsx` con varias personas y las mapea automáticamente a los campos del registro (`ExcelUploader`).
+- **Panel de administración** (solo `admin`):
+  - `/admin/usuarios`: crear usuarios, editar nombre/rol, activar/desactivar cuentas — cada cambio pide un motivo y queda auditado.
+  - `/admin/proyectos`: crear, renombrar y eliminar proyectos (con protección para no borrar proyectos en uso).
+- **Registros con alcance por rol** (`/admin/registros`, accesible a cualquier usuario autenticado, no solo admin): búsqueda y filtro de registros por texto, status, proyecto, centro de operación y usuario, con paginación. El backend (`lib/accessScope.js`) es quien decide qué puede ver/hacer cada rol.
+- **Detalle y corrección de registro** (`/admin/registros/:id`): ver un registro, corregir su `status` (con motivo, auditado) y consultar su historial de auditoría.
 
-There are several ways of editing your application.
+## Arquitectura
 
-**Use Lovable**
+Proyecto full-stack en un solo repo:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/          Frontend — React + TypeScript + Vite + shadcn-ui
+server.js     Backend — API REST en Express
+lib/          Lógica de servidor (registros, proyectos, accessScope, config, seedPolicy)
+migration*.sql  Esquema y migraciones de MySQL
 ```
 
-**Edit a file directly in GitHub**
+> Nota: existe una carpeta `data-delight/` en la raíz con una copia antigua/incompleta del frontend (sin roles, sin admin, login con `localStorage`). No es la app activa — `index.html` carga `src/main.tsx`, así que el código vigente es el de `src/`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Frontend (`src/`)
 
-**Use GitHub Codespaces**
+- React 18 + TypeScript + Vite, UI con shadcn-ui (Radix) + Tailwind
+- React Router con guards por rol (`AuthenticatedRoute`, `AdminRoute` en `src/components/routeGuards.tsx`)
+- TanStack Query para estado de servidor
+- Exportación/lectura de Excel (`xlsx`)
+- Tests con Vitest + Testing Library (`*.test.tsx`)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Backend (`server.js` + `lib/`)
 
-## What technologies are used for this project?
+- Express + MySQL (`mysql2`)
+- Autenticación JWT (`jsonwebtoken`) + contraseñas con `bcrypt`
+- El servidor **no arranca** sin `JWT_SECRET` (sin valor por defecto inseguro — ver `lib/config.js`)
+- Auditoría: cambios de status de registros y cambios sobre usuarios (nombre, rol, estado) quedan registrados con motivo
+- `accessScope.js` centraliza qué datos puede ver/modificar cada rol (`admin` vs `operador`)
 
-This project is built with:
+## Requisitos previos
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Node.js
+- MySQL
+- (Opcional) un flujo n8n escuchando los registros nuevos
 
-## How can I deploy this project?
+## Variables de entorno
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Copiar `.env.example` a `.env` y completar:
 
-## Can I connect a custom domain to my Lovable project?
+| Variable | Descripción |
+|---|---|
+| `VITE_API_URL` | URL del backend (build-time, frontend) |
+| `JWT_SECRET` | Secreto para firmar JWT — **requerido**, sin valor por defecto |
+| `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT` | Conexión a MySQL |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_NOMBRE` | Usuario admin inicial (solo para `seed.js`, una sola vez) |
 
-Yes, you can!
+## Puesta en marcha
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+npm install
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# 1. Crear el esquema
+mysql < migration.sql
+mysql < migration_admin_audit_log.sql
+mysql < migration_proyectos.sql
+
+# 2. Crear el usuario admin inicial (una sola vez)
+node seed.js
+
+# 3. Levantar backend y frontend
+node server.js       # API en :3001
+npm run dev           # Vite en :5173 (o el puerto configurado)
+```
+
+## Tests
+
+```bash
+npm run test        # una corrida
+npm run test:watch  # modo watch
+```
+
+## Docker
+
+El repo incluye `Dockerfile`, `Dockerfile.backend` y `nginx.conf` para desplegar frontend y backend en contenedores.
